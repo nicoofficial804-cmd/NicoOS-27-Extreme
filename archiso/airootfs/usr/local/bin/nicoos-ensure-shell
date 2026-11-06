@@ -1,0 +1,27 @@
+#!/bin/bash
+# /usr/local/bin/nicoos-ensure-shell
+#
+# La shell NicoOS viene avviata da Hyprland stesso: hyprland.lua termina con
+# `require("nicoos-shell")`, e l'hook hyprland.start di quel file esegue
+# `nicoos-shell` (README_SHELL.md). Questo script è la rete di sicurezza:
+# aspetta qualche secondo quell'hook e avvia la shell da solo se, per qualche
+# motivo (una configurazione utente rotta, un primo tentativo andato in crash,
+# un hook mancante), nessuna shell è in esecuzione. Non avvia mai una seconda
+# istanza.
+set -u
+
+if [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+    # Non siamo dentro una sessione Hyprland: niente da fare.
+    exit 0
+fi
+
+for _ in $(seq 1 15); do
+    if pgrep -x nicoos-shell >/dev/null 2>&1; then
+        exit 0
+    fi
+    sleep 1
+done
+
+# Lo stesso comando usato dall'hook di Hyprland (README_SHELL.md).
+echo "[nicoos-ensure-shell] la shell non è partita dall'hook di Hyprland, la avvio" >&2
+exec env LIBGL_ALWAYS_SOFTWARE=1 QT_QUICK_BACKEND=software /usr/bin/nicoos-shell

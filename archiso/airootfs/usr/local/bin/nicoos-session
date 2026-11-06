@@ -1,0 +1,126 @@
+#!/bin/bash
+# /usr/local/bin/nicoos-session
+#
+# Punto di ingresso della sessione grafica di NicoOS 27 Extreme.
+#
+# È ciò che avvia SDDM (wayland-sessions/nicoos.desktop). È volutamente
+# minuscolo e ha esattamente un compito: far partire Hyprland tramite il suo
+# launcher ufficiale `start-hyprland` e, se questo è impossibile, consegnare
+# all'utente una TTY utilizzabile con la Shell di emergenza di NicoOS invece di
+# rimandarlo al greeter in un ciclo.
+#
+# La Shell di emergenza NON dipende da Hyprland, Wayland, Qt o dalla shell.
+set -u
+
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}"
+STATE_DIR="${RUNTIME_DIR}/nicoos"
+mkdir -p "$STATE_DIR" 2>/dev/null || true
+SESSION_LOG="${STATE_DIR}/session.log"
+EMERGENCY_LOG="/var/log/nicoos-emergency.log"
+# Ripiego quando il log globale non è scrivibile da questo utente (è di root).
+if [ -n "${XDG_CACHE_HOME:-}" ]; then
+    USER_LOG_DIR="$XDG_CACHE_HOME/nicoos"
+elif [ -n "${HOME:-}" ]; then
+    USER_LOG_DIR="$HOME/.cache/nicoos"
+else
+    USER_LOG_DIR="/tmp/nicoos-$(id -u)"
+fi
+USER_LOG="$USER_LOG_DIR/emergency.log"
+
+log() {
+    printf '%s [nicoos-session] %s\n' "$(date -Is)" "$*" >>"$SESSION_LOG" 2>/dev/null || true
+}
+
+# Log globale quando possiamo scriverlo (root), altrimenti il log dell'utente.
+# Non stampa mai un errore di permessi: finire qui deve restare silenzioso e
+# utile. (Un >> rifiutato viene segnalato da bash prima che 2>/dev/null su
+# quel comando abbia effetto, da qui le subshell e il test esplicito [ -w ].)
+append_line() {
+    [ -e "$1" ] || { : >>"$1"; } 2>/dev/null || return 1
+    [ -w "$1" ] || return 1
+    { printf '%s\n' "$2" >>"$1"; } 2>/dev/null
+}
+
+global_log() {
+    local line
+    line="$(date -Is) [nicoos-session] $*"
+    if append_line "$EMERGENCY_LOG" "$line"; then
+        return 0
+    fi
+    mkdir -p "$USER_LOG_DIR" 2>/dev/null || return 1
+    append_line "$USER_LOG" "$line" || printf '%s\n' "$line" >&2
+}
+
+fail() {
+    log "ERRORE FATALE: $*"
+    global_log "ERRORE FATALE: $*"
+    exec /usr/local/bin/nicoos-emergency-shell
+}
+
+# --- ambiente della sessione ------------------------------------------------
+export XDG_SESSION_TYPE=wayland
+export XDG_SESSION_DESKTOP=nicoos
+export XDG_CURRENT_DESKTOP=Hyprland
+export XDG_SESSION_CLASS=user
+# Le applicazioni Qt (compresa la shell NicoOS) parlano Wayland nativo.
+export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-wayland}"
+export MOZ_ENABLE_WAYLAND=1
+export ELECTRON_OZONE_PLATFORM_HINT=auto
+# Cursore: lo stesso tema del greeter SDDM e di hyprland.lua (pacchetto
+# adwaita-cursors). Senza un tema Xcursor le app Wayland e Xwayland ricadono
+# sul cursore predefinito di Xorg, cioè sulla "X".
+export XCURSOR_THEME="${XCURSOR_THEME:-Adwaita}"
+export XCURSOR_SIZE="${XCURSOR_SIZE:-24}"
+export HYPRCURSOR_SIZE="${HYPRCURSOR_SIZE:-24}"
+
+# --- rendering ---------------------------------------------------------------
+# Su hardware reale Hyprland e la shell disegnano sulla GPU. In una macchina
+# virtuale la GPU emulata di solito non riesce a passare buffer validi a Qt,
+# quindi lì si usa il backend software di Qt Quick: la combinazione documentata
+# in README_SHELL.md (LIBGL_ALWAYS_SOFTWARE=1 QT_QUICK_BACKEND=software). Anche
+# main() di nicoos-shell rileva le VM; questo copre allo stesso modo ogni altra
+# app Qt della sessione.
+if systemd-detect-virt --quiet 2>/dev/null; then
+    export LIBGL_ALWAYS_SOFTWARE=1
+    export QT_QUICK_BACKEND=software
+    log "macchina virtuale rilevata: rendering software di Qt Quick per questa sessione"
+fi
+
+log "avvio della sessione per l'uid $(id -u)"
+
+# --- disponibilità di Hyprland ----------------------------------------------
+# Si usa sempre `start-hyprland`, il launcher ufficiale che accompagna
+# Hyprland: tiene il compositore sotto un watchdog (lo riavvia se esce in modo
+# sporco), prepara l'ambiente e gestisce nixGL. `/usr/bin/Hyprland` resta come
+# ripiego per una versione che non installi ancora il launcher.
+HYPRLAND_CMD=""
+if command -v start-hyprland >/dev/null 2>&1; then
+    HYPRLAND_CMD=start-hyprland
+elif command -v Hyprland >/dev/null 2>&1; then
+    HYPRLAND_CMD=Hyprland
+else
+    fail "Hyprland non è installato (mancano /usr/bin/start-hyprland e /usr/bin/Hyprland)"
+fi
+
+# Il compositore ha bisogno di un seat; senza logind/seatd nulla di grafico
+# può funzionare.
+if [ ! -e /dev/dri/card0 ] && [ ! -e /dev/dri/card1 ]; then
+    log "avviso: nessun dispositivo DRM trovato in /dev/dri"
+fi
+
+# --- Hyprland ----------------------------------------------------------------
+if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+    dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE >/dev/null 2>&1 || true
+fi
+
+log "exec ${HYPRLAND_CMD}"
+"$HYPRLAND_CMD" >>"$SESSION_LOG" 2>&1
+status=$?
+log "${HYPRLAND_CMD} è terminato con stato ${status}"
+
+if [ "$status" -ne 0 ]; then
+    fail "Hyprland è terminato con stato ${status}"
+fi
+
+# Logout pulito dal menu di alimentazione della shell: torna al greeter.
+exit 0

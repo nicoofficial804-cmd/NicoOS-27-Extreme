@@ -1,0 +1,188 @@
+#!/bin/bash
+# /usr/local/bin/nicoos-target-prepare
+#
+# Viene eseguito DENTRO il sistema di destinazione (shellprocess di Calamares,
+# dontChroot: false) subito dopo che `unpackfs` ha messo a posto il root file
+# system live di NicoOS.
+#
+# NicoOS installa esattamente lo stesso root file system che esegue la ISO
+# live: è ciò che garantisce che il desktop installato sia davvero Hyprland +
+# SDDM + la shell NicoOS, con ogni dipendenza e file di configurazione
+# presente, e senza bisogno di alcuna connessione di rete. Questo script
+# rimuove i pezzi che hanno senso solo sul supporto live, così il risultato è
+# un sistema Arch normale, pulito e persistente.
+#
+# Ogni passo è idempotente e ogni errore non fatale viene registrato e
+# ignorato; solo un desktop NicoOS mancante è un errore grave.
+set -u
+
+log()  { printf '[nicoos-target-prepare] %s\n' "$*"; }
+warn() { printf '[nicoos-target-prepare] AVVISO: %s\n' "$*" >&2; }
+die()  { printf '[nicoos-target-prepare] ERRORE FATALE: %s\n' "$*" >&2; exit 1; }
+
+log "preparazione della radice di destinazione: $(uname -m), $(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-sconosciuto}")"
+
+# ---------------------------------------------------------------------------
+# 1. Configurazione valida solo sul supporto live
+# ---------------------------------------------------------------------------
+# Hook archiso nell'initramfs: il sistema installato deve avviare un initramfs
+# normale e autosufficiente, senza hook archiso/loop/pXE che cercano uno
+# squashfs inesistente sul disco installato.
+if [ -e /etc/mkinitcpio.conf.d/archiso.conf ]; then
+    rm -f /etc/mkinitcpio.conf.d/archiso.conf
+    log "rimosso il drop-in archiso di mkinitcpio (l'initramfs sarà rigenerato)"
+fi
+rmdir /etc/mkinitcpio.conf.d 2>/dev/null || true
+
+# Autologin SDDM per la sessione live: il sistema installato chiede la password.
+rm -f /etc/sddm.conf.d/20-nicoos-live-autologin.conf
+rmdir /etc/sddm.conf.d 2>/dev/null || true
+
+# Sudo senza password per l'utente live.
+rm -f /etc/sudoers.d/10-nicoos-live
+
+# SDDM è l'unico display manager supportato da NicoOS, e graphical.target
+# avvia il desktop della macchina tramite l'alias display-manager.service
+# (graphical.target: Wants=display-manager.service — sddm.service ha solo
+# Alias=, non WantedBy=). Punta l'alias a SDDM qui, subito dopo aver messo a
+# posto il root file system, così un avvio in graphical.target trova sempre un
+# display manager, anche se il modulo displaymanager di Calamares viene
+# saltato.
+install -d -m 0755 /etc/systemd/system
+ln -sf /usr/lib/systemd/system/sddm.service /etc/systemd/system/display-manager.service \
+    || warn "impossibile puntare display-manager.service a sddm"
+
+# Il sistema installato si avvia nel desktop grafico.
+systemctl set-default graphical.target >/dev/null 2>&1 \
+    || warn "impossibile impostare graphical.target come target predefinito"
+
+# ---------------------------------------------------------------------------
+# 2. L'utente live non è l'utente installato
+# ---------------------------------------------------------------------------
+# Calamares crea l'account vero nel modulo `users` (pochi job dopo questo).
+# L'account live deve sparire prima, altrimenti useradd rifiuterebbe di creare
+# un account con lo stesso uid o con uno in conflitto.
+if id -u nicoos >/dev/null 2>&1; then
+    userdel -f nicoos >/dev/null 2>&1 || true
+    log "rimosso l'account dell'utente live 'nicoos'"
+fi
+# Cintura e bretelle: elimina ogni voce rimasta, qualunque sia lo stato di
+# uscita di userdel.
+sed -i '/^nicoos:/d' /etc/passwd /etc/shadow /etc/group /etc/gshadow 2>/dev/null || true
+sed -i '/^nicoos:/d' /etc/subuid /etc/subgid 2>/dev/null || true
+
+rm -rf /home/nicoos
+rm -rf /root/.cache /root/.bash_history /root/.zsh_history /root/nicoos27-shell
+
+# Lo stato e le cache della sessione live non appartengono mai al disco
+# installato.
+rm -rf /var/cache/pacman/pkg/* 2>/dev/null || true
+rm -rf /var/log/journal/* 2>/dev/null || true
+rm -f /usr/share/nicoos/airootfs.sfs
+
+# ---------------------------------------------------------------------------
+# 2b. Programmi del desktop che la rimozione dei pacchetti non deve toccare
+# ---------------------------------------------------------------------------
+# Il modulo `packages` di Calamares esegue `pacman -Rs`, che porta via anche
+# le dipendenze rimaste senza utilizzatori. foot arriva nel sistema
+# installato dal root file system live, ma senza un motivo di installazione
+# esplicito potrebbe essere trattato come dipendenza orfana dell'installer e
+# sparire. Marcarlo esplicitamente lo rende parte fissa della dotazione del
+# desktop (SUPER+Invio apre proprio foot).
+for prog in foot smartmontools; do
+    if pacman -Q "$prog" >/dev/null 2>&1; then
+        if pacman -D --asexplicit "$prog" >/dev/null 2>&1; then
+            log "$prog marcato come installato esplicitamente"
+        else
+            warn "impossibile marcare $prog come installato esplicitamente"
+        fi
+    elif [ "$prog" = foot ]; then
+        warn "foot mancante nella destinazione: nessun terminale nel sistema installato"
+    fi
+done
+
+# ---------------------------------------------------------------------------
+# 3. Garantisce che il desktop NicoOS sia davvero installato
+# ---------------------------------------------------------------------------
+missing=0
+for f in /usr/bin/Hyprland /usr/bin/sddm /usr/bin/nicoos-shell /usr/bin/foot \
+         /usr/local/bin/nicoos-session /usr/local/bin/nicoos-emergency-shell \
+         /usr/share/wayland-sessions/nicoos.desktop \
+         /usr/share/sddm/themes/nicoos/Main.qml \
+         /etc/skel/.config/hypr/hyprland.lua; do
+    [ -e "$f" ] || { warn "mancante nella destinazione: $f"; missing=1; }
+done
+[ "$missing" -eq 0 ] || die "il desktop NicoOS è incompleto nella destinazione - installazione interrotta"
+
+# Il file di integrazione della shell deve stare accanto a hyprland.lua per
+# require().
+if [ -f /usr/share/nicoos-shell/nicoos-shell.lua ]; then
+    install -Dm0644 /usr/share/nicoos-shell/nicoos-shell.lua \
+        /etc/skel/.config/hypr/nicoos-shell.lua
+fi
+if ! grep -q 'require("nicoos-shell")' /etc/skel/.config/hypr/hyprland.lua 2>/dev/null; then
+    printf '\n-- Shell di NicoOS 27 Extreme (README_SHELL.md)\nrequire("nicoos-shell")\n' \
+        >> /etc/skel/.config/hypr/hyprland.lua
+fi
+
+# SDDM deve usare il greeter NicoOS e avere come predefinita la sessione
+# NicoOS.
+install -d -m 0755 /etc/sddm.conf.d
+cat > /etc/sddm.conf.d/10-nicoos.conf <<'EOF'
+# /etc/sddm.conf.d/10-nicoos.conf — scritto dall'installer di NicoOS
+[Theme]
+Current=nicoos
+ThemeDir=/usr/share/sddm/themes
+
+[Users]
+DefaultSession=nicoos
+EOF
+
+# La shell installata non deve mai partire in modalità rendering software: la
+# combinazione LIBGL_ALWAYS_SOFTWARE/QT_QUICK_BACKEND del README serve al
+# ripiego live in VM, e main.cpp rileva già da sé le macchine virtuali.
+rm -f /etc/environment.d/90-nicoos-live-software.conf
+
+# ---------------------------------------------------------------------------
+# 4. Ripristina l'immagine del kernel in /boot per il sistema installato
+# ---------------------------------------------------------------------------
+install -d -m 0755 /boot
+
+KERNEL_IMAGE="$(find /usr/lib/modules -mindepth 2 -maxdepth 2 -type f -name vmlinuz -print -quit)"
+
+if [ -z "$KERNEL_IMAGE" ]; then
+    die "immagine del kernel non trovata in /usr/lib/modules"
+fi
+
+install -Dm0644 "$KERNEL_IMAGE" /boot/vmlinuz-linux
+log "immagine del kernel installata da $KERNEL_IMAGE in /boot/vmlinuz-linux"
+
+# ---------------------------------------------------------------------------
+# 5. Configurazione di avvio del sistema installato
+# ---------------------------------------------------------------------------
+# Non lasciare mai alla destinazione la riga di comando del kernel della ISO
+# live.
+if [ -f /etc/default/grub ]; then
+    sed -i 's/^GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="NicoOS"/' /etc/default/grub
+    sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=5/' /etc/default/grub
+    grep -q '^GRUB_CMDLINE_LINUX_DEFAULT' /etc/default/grub \
+        || echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=3"' >> /etc/default/grub
+fi
+
+# systemd-boot (se l'utente lo sceglie al posto di GRUB) ha bisogno di una
+# voce sensata.
+if [ -d /boot/loader ]; then
+    cat > /boot/loader/loader.conf <<'EOF'
+default  nicoos.conf
+timeout  5
+console-mode keep
+EOF
+fi
+
+# Il modulo mount di Calamares ha già montato /dev, /proc e /sys della
+# destinazione; niente da fare qui. Assicurati solo che il machine-id venga
+# rigenerato.
+rm -f /etc/machine-id
+
+log "radice di destinazione preparata"
+exit 0

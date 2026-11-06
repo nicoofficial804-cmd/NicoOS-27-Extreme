@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Installa NicoOS 27 Extreme
+Comment=Installa NicoOS 27 Extreme su questo computer (Calamares)
+Exec=/usr/local/bin/nicoos-installer
+Icon=calamares
+Terminal=false
+Categories=System;
+Keywords=installa;installatore;calamares;nicoos;
+StartupNotify=true

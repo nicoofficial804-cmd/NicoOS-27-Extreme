@@ -1,0 +1,18 @@
+# Build artifacts
+.build/
+
+# Temporary files
+*.tmp
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# QEMU Install Test Disk
+
+.qcow2
+
+# Other
+
+.gitignore.save

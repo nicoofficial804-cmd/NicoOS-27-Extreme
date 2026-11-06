@@ -1,0 +1,58 @@
+# Configurazione della shell di NicoOS 27 Extreme
+# Copia in ~/.config/nicoos/nicoos.conf — viene creato automaticamente con
+# questi valori predefiniti al primo avvio se non esiste già.
+# Le modifiche vengono applicate a caldo; nessun riavvio necessario.
+
+[appearance]
+# Colore esadecimale usato per accenti, evidenziazioni e bagliori in tutta la
+# shell.
+accent_color=#00d9ff
+# Sfondo di pannello/popup da 0.0 (del tutto trasparente) a 1.0 (del tutto
+# opaco).
+panel_opacity=0.72
+# Fattore di scala globale dell'interfaccia, applicato sopra il ridimensionamento
+# DPI di Qt.
+ui_scale=1.0
+# Tema di icone usato per le icone delle app (facoltativo). Predefinito: il
+# primo installato tra Papirus-Dark, Papirus, Adwaita, breeze.
+#icon_theme=Papirus-Dark
+
+[panel]
+# top | bottom
+position=top
+# Altezza del pannello in pixel logici. 40-46 dà pulsanti più grandi alla
+# lista finestre. position=bottom + height=44 dà una classica barra delle
+# applicazioni in stile Windows.
+height=34
+
+[behavior]
+# Durata in ms delle transizioni dell'interfaccia (punti delle aree di
+# lavoro, notifiche, ecc.).
+animation_speed_ms=180
+# Formato data/ora di Qt, ad esempio "HH:mm", "HH:mm:ss", "h:mm AP".
+clock_format=HH:mm
+# Coppia Modificatore,Tasto che Hyprland associa all'apertura del launcher.
+launcher_shortcut=SUPER,R
+# Se il cambio di area di lavoro ricomincia dalla prima dopo l'ultima.
+workspace_wrap_around=true
+
+[wallpaper]
+# Impostato automaticamente quando scegli uno sfondo (SUPER+W).
+#path=/home/tu/Pictures/Wallpapers/example.png
+# Cartelle aggiuntive in cui cercare, separate da virgola. Vengono sempre
+# cercate: <Immagini>/Wallpapers, <Immagini>/Sfondi,
+# ~/.config/nicoos/wallpapers, /usr/share/backgrounds
+#dirs=/home/tu/Downloads/wallpapers
+
+[lock]
+# Per impostazione predefinita la shell scrive ~/.config/nicoos/hyprlock.conf
+# (con colore d'accento e sfondo corrente) e avvia `hyprlock -c` con quello. Il
+# file viene rigenerato a ogni blocco finché non ne cancelli la prima riga
+# ("# nicoos-managed ..."); da quel momento è tuo e puoi modificarlo.
+# Oppure indica una tua configurazione di hyprlock:
+#hyprlock_config=/home/tu/.config/hypr/hyprlock.conf
+# Font usato dalla schermata di blocco generata (qualsiasi famiglia installata).
+#font=Noto Sans
+# Rendering software per hyprlock (LIBGL_ALWAYS_SOFTWARE): auto = solo nelle
+# macchine virtuali, yes = sempre, no = mai.
+#software_render=auto

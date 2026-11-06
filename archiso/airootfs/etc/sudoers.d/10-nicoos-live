@@ -1,0 +1,8 @@
+# SOLO ISO LIVE.
+#
+# La sessione live ha bisogno di root per Calamares e per la shell di
+# emergenza, e su uno squashfs in sola lettura non c'è stato persistente da
+# proteggere. Calamares elimina questo file dal sistema installato
+# (/usr/local/bin/nicoos-target-prepare), quindi un NicoOS installato richiede
+# una vera password per sudo.
+nicoos ALL=(ALL:ALL) NOPASSWD: ALL

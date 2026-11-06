@@ -1,0 +1,44 @@
+# /etc/calamares/branding/nicoos/branding.desc — NicoOS 27 Extreme
+---
+componentName: nicoos
+slideshow: "show.qml"
+
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+
+windowExpanding: normal
+windowSize: 1000px,640px
+windowPlacement: center
+
+sidebar: widget
+navigation: widget
+
+strings:
+    productName:         "NicoOS 27 Extreme"
+    shortProductName:    "NicoOS"
+    version:             27
+    shortVersion:        27
+    versionedName:       "NicoOS 27 Extreme"
+    shortVersionedName:  "NicoOS 27"
+    bootloaderEntryName: "NicoOS"
+    productUrl:          "https://nicoos.dev/"
+    supportUrl:          "https://nicoos.dev/support"
+    knownIssuesUrl:      "https://nicoos.dev/issues"
+    releaseNotesUrl:     "https://nicoos.dev/releases/27"
+    donateUrl:           ""
+
+images:
+    productIcon:    "logo.png"
+    productLogo:    "logo.png"
+    productWelcome: "wallpaper.png"
+
+style:
+    SidebarBackground:        "#080d16"
+    SidebarText:              "#5a6b80"
+    SidebarTextCurrent:       "#05070d"
+    SidebarBackgroundCurrent: "#00d9ff"
+
+# Presentazione QML (show.qml): disegna uno sfondo scuro opaco e testi chiari,
+# così durante l'installazione non compaiono mai aree bianche. È composta solo
+# da rettangoli, un gradiente e testo: resta leggera anche con il rendering
+# software delle macchine virtuali.

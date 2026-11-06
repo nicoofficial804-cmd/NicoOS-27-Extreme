@@ -1,0 +1,18 @@
+-- ~/.config/hypr/hl.lua
+--
+-- Il runtime di configurazione Lua di Hyprland espone l'API di
+-- configurazione come tabella *globale* `hl` (vedi
+-- /usr/share/hypr/hyprland.lua: `hl.monitor(...)`, `hl.bind(...)`, ...). Non
+-- registra un modulo chiamato "hl".
+--
+-- Il file di integrazione della shell NicoOS (nicoos-shell.lua, installato da
+-- nicoos27-shell) inizia con
+--
+--     local hl = require("hl")
+--
+-- quindi `require("hl")` deve risolvere a qualcosa. Questo shim fa esattamente
+-- questo: restituisce la tabella globale che Hyprland ha già creato. È
+-- installato accanto a hyprland.lua (e replicato in
+-- /usr/share/nicoos-shell/hl.lua) ed è volutamente lungo tre righe, così non
+-- può divergere dalla shell.
+return hl

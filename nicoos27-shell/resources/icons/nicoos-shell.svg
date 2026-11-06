@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="hexFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a1218"/>
+      <stop offset="100%" stop-color="#132028"/>
+    </linearGradient>
+    <linearGradient id="nStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f0ff"/>
+      <stop offset="100%" stop-color="#0090ff"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3.2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <polygon points="64,6 114,34 114,94 64,122 14,94 14,34"
+           fill="url(#hexFill)" stroke="#00d9ff" stroke-opacity="0.55" stroke-width="2"/>
+
+  <polygon points="64,16 106,39 106,89 64,112 22,89 22,39"
+           fill="none" stroke="#00d9ff" stroke-opacity="0.25" stroke-width="1"/>
+
+  <g filter="url(#glow)">
+    <path d="M42 90 L42 38 L54 38 L86 78 L86 38 L96 38 L96 90 L84 90 L52 50 L52 90 Z"
+          fill="url(#nStroke)"/>
+  </g>
+
+  <circle cx="64" cy="64" r="3" fill="#ffffff" opacity="0.9"/>
+</svg>

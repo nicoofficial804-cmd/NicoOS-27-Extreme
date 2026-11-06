@@ -1,0 +1,26 @@
+## /etc/sudoers — NicoOS 27 Extreme
+##
+## Installato dal profilo NicoOS. L'unica differenza che conta rispetto al
+## file originale di Arch: i membri di `wheel` possono usare sudo, e Calamares
+## inserisce in `wheel` l'utente che crea (sudoersGroup in
+## /etc/calamares/modules/users.conf).
+##
+## La ISO live concede sudo senza password tramite il file separato
+## /etc/sudoers.d/10-nicoos-live, che non viene installato sul sistema di
+## destinazione.
+
+root ALL=(ALL:ALL) ALL
+
+## Togli il commento per permettere ai membri del gruppo sudo di eseguire
+## qualsiasi comando
+# %sudo ALL=(ALL:ALL) ALL
+
+## Togli il commento per permettere ai membri del gruppo wheel di eseguire
+## qualsiasi comando
+%wheel ALL=(ALL:ALL) ALL
+
+## La stessa cosa senza password
+# %wheel ALL=(ALL:ALL) NOPASSWD: ALL
+
+## Leggi i file aggiuntivi da /etc/sudoers.d
+@includedir /etc/sudoers.d

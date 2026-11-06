@@ -1,0 +1,49 @@
+# Manutentore: nicoo
+pkgname=nicoos-shell
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Shell desktop futuristica di NicoOS 27 Extreme per Hyprland"
+arch=('x86_64' 'aarch64')
+url="https://github.com/nicoo/nicoos27-shell"
+license=('MIT')
+depends=(
+    'qt6-base'
+    'qt6-declarative'
+    'qt6-svg'
+    'layer-shell-qt'
+    'hyprland'
+    'networkmanager'
+    'pipewire-pulse'
+    'bluez'
+)
+optdepends=(
+    'swaybg: selettore di sfondi'
+    'hyprlock: schermata di blocco'
+    'brightnessctl: ripiego per la retroilluminazione'
+    'grim: screenshot'
+    'slurp: selezione dell'area per gli screenshot'
+    'wl-clipboard: cronologia appunti e copia degli screenshot'
+    'cliphist: cronologia appunti'
+    'libnotify: notify-send per screenshot/registrazioni'
+    'playerctl: controlli multimediali'
+    'power-profiles-daemon: profili energetici'
+    'wf-recorder: registrazione dello schermo'
+    'hyprsunset: luce notturna'
+    'papirus-icon-theme: icone delle app'
+)
+makedepends=('cmake' 'ninja' 'pkgconf')
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+    cmake -B build -S "$pkgname-$pkgver" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -GNinja
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+    install -Dm644 packaging/nicoos-shell.lua "$pkgdir/usr/share/nicoos-shell/nicoos-shell.lua"
+}

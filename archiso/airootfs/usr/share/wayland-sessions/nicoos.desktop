@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Hyprland (NicoOS 27 Extreme)
+Comment=NicoOS 27 Extreme — Hyprland con la shell NicoOS
+Exec=/usr/local/bin/nicoos-session
+TryExec=/usr/local/bin/nicoos-session
+DesktopNames=Hyprland

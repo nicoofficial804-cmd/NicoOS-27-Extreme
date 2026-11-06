@@ -1,0 +1,139 @@
+# NicoOS 27 Extreme — pacchetti installati nel root file system live.
+# Tutto ciò che è elencato qui è presente anche nel sistema installato da
+# Calamares, perché l'installer scompatta questo stesso root file system sulla
+# destinazione.
+
+# --- sistema di base --------------------------------------------------------
+base
+linux
+linux-firmware
+linux-firmware-amdgpu
+linux-firmware-intel
+linux-firmware-nvidia
+sof-firmware
+intel-ucode
+amd-ucode
+mkinitcpio
+mkinitcpio-archiso
+archlinux-keyring
+systemd-sysvcompat
+sudo
+zsh
+nano
+vim
+less
+man-db
+man-pages
+rsync
+unzip
+psmisc
+procps-ng
+util-linux
+iproute2
+iputils
+lsof
+htop
+file
+which
+e2fsprogs
+dosfstools
+exfatprogs
+f2fs-tools
+ntfs-3g
+xfsprogs
+btrfs-progs
+gptfdisk
+parted
+cryptsetup
+lvm2
+mdadm
+efibootmgr
+grub
+os-prober
+arch-install-scripts
+squashfs-tools
+mtools
+
+# --- rete -------------------------------------------------------------------
+networkmanager
+wpa_supplicant
+dhcpcd
+iw
+wireless-regdb
+bluez
+bluez-utils
+openssh
+
+# --- audio / alimentazione --------------------------------------------------
+pipewire
+pipewire-pulse
+pipewire-alsa
+pipewire-jack
+wireplumber
+alsa-utils
+power-profiles-daemon
+upower
+
+# --- grafica / desktop Wayland ---------------------------------------------
+hyprland
+xdg-desktop-portal
+xdg-desktop-portal-hyprland
+xorg-xwayland
+mesa
+vulkan-intel
+vulkan-radeon
+libva-intel-driver
+libva-utils
+qt6-base
+qt6-declarative
+qt6-translations
+qt6-svg
+qt6-wayland
+layer-shell-qt
+# Tema del cursore vero: senza questo Xorg (greeter SDDM) e le app Wayland
+# mostrano il cursore predefinito di Xorg, la "X".
+adwaita-cursors
+sddm
+polkit
+hyprpolkitagent
+accountsservice
+xdg-utils
+xdg-user-dirs
+
+# --- dipendenze della shell NicoOS (README_SHELL.md) ------------------------
+socat
+libnotify
+swaybg
+hyprlock
+hypridle
+hyprsunset
+brightnessctl
+grim
+slurp
+wl-clipboard
+cliphist
+playerctl
+wf-recorder
+foot
+papirus-icon-theme
+ttf-dejavu
+ttf-jetbrains-mono-nerd
+noto-fonts-emoji
+
+# --- installer --------------------------------------------------------------
+calamares
+kpmcore
+kcoreaddons
+libpwquality
+yaml-cpp
+python
+python-yaml
+python-jsonschema
+device-mapper
+dmraid
+ndctl
+
+# --- supporto per la ISO live -----------------------------------------------
+syslinux
+memtest86+
+memtest86+-efi

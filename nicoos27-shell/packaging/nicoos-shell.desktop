@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Shell di NicoOS 27 Extreme
+Comment=Shell desktop futuristica per Hyprland
+Exec=nicoos-shell
+Icon=nicoos-shell
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

@@ -1,0 +1,106 @@
+#!/bin/bash
+# /usr/local/bin/nicoos-emergency-shell
+#
+# La Shell di emergenza di NicoOS. Viene mostrata quando Hyprland manca o non
+# è riuscito ad avviarsi. Ha bisogno solo di una TTY e di una shell: niente
+# Wayland, niente Qt, niente Hyprland.
+#
+# È raggiungibile in tre modi:
+#   1. automaticamente, da nicoos-session (login SDDM / autologin live),
+#   2. manualmente:  sudo nicoos-emergency-shell
+#   3. da qualsiasi TTY dopo un avvio grafico fallito (Ctrl+Alt+F2).
+set -u
+
+# Serve un vero terminale; senza, non possiamo fare nulla. La redirezione
+# viene eseguita in una subshell così che una rifiutata (/dev/tty0 richiede
+# root quando siamo stati avviati dal display manager) resti silenziosa.
+if [ ! -t 0 ] && [ ! -t 1 ]; then
+    { exec </dev/tty0 >/dev/tty0 2>&1; } 2>/dev/null || true
+fi
+
+# Rendi la console usabile e leggibile, qualunque sia lo stato del VT.
+{
+    printf '\033[0m\033[H\033[2J'
+} 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
+# Registrazione dei log
+# ---------------------------------------------------------------------------
+# /var/log/nicoos-emergency.log è il log globale. È di proprietà di root,
+# quindi un utente normale non può accodarvi righe; scrivere lì non deve mai
+# produrre un messaggio "Permesso negato" né interrompere la shell. La riga va
+# nel log globale quando è possibile, altrimenti in un log per utente,
+# altrimenti sulla console.
+EMERGENCY_LOG="/var/log/nicoos-emergency.log"
+if [ -n "${XDG_CACHE_HOME:-}" ]; then
+    USER_LOG_DIR="$XDG_CACHE_HOME/nicoos"
+elif [ -n "${HOME:-}" ]; then
+    USER_LOG_DIR="$HOME/.cache/nicoos"
+else
+    USER_LOG_DIR="/tmp/nicoos-$(id -u)"
+fi
+USER_LOG="$USER_LOG_DIR/emergency.log"
+SESSION_LOG="${XDG_RUNTIME_DIR:-/tmp}/nicoos/session.log"
+
+log_to() {
+    # log_to <file> <directory> <riga>
+    # Crea il file se serve, poi accoda. Entrambe le scritture girano in una
+    # subshell: una redirezione rifiutata viene segnalata da bash al momento
+    # della preparazione, prima che 2>/dev/null sul comando abbia effetto, e
+    # un /var/log non scrivibile non deve stampare proprio nulla.
+    mkdir -p "$2" 2>/dev/null || return 1
+    [ -e "$1" ] || { : >>"$1"; } 2>/dev/null || return 1
+    [ -w "$1" ] || return 1
+    { printf '%s\n' "$3" >>"$1"; } 2>/dev/null
+}
+
+nicoos_log() {
+    line="$(date -Is) [emergency-shell] $*"
+    if log_to "$EMERGENCY_LOG" /var/log "$line"; then
+        return 0
+    fi
+    if log_to "$USER_LOG" "$USER_LOG_DIR" "$line"; then
+        return 0
+    fi
+    printf '%s\n' "$line" >&2 2>/dev/null || true
+}
+
+cat <<'NICOOS_EMERGENCY'
+Si è verificato un errore imprevisto durante l'avvio della GUI (Hyprland) e ora non puoi entrare nell'interfaccia.
+
+Sei nella Shell di emergenza di NicoOS.
+Se hai rimosso Hyprland per scherzo, assicurati di essere connesso a Internet ed esegui "sudo pacman -Sy hyprland"
+
+Altrimenti, potrebbe essere la fine per te.
+
+Non me ne frega niente, arrangiati.
+NICOOS_EMERGENCY
+
+echo
+echo "-------------------------------------------------------------------------"
+echo " Utili:   sudo pacman -S hyprland sddm nicoos-shell"
+echo "          systemctl status sddm     journalctl -b -u sddm"
+echo "          log: $SESSION_LOG"
+echo "               $EMERGENCY_LOG   $USER_LOG"
+echo "-------------------------------------------------------------------------"
+echo
+
+# Registra che siamo finiti qui, per il debug successivo. Non fallisce mai,
+# non stampa mai un errore di permessi: log globale se scrivibile, altrimenti
+# il log dell'utente.
+emergency_tty="$(tty 2>/dev/null || true)"
+case "$emergency_tty" in
+    /dev/*) ;;
+    *) emergency_tty="?" ;;
+esac
+nicoos_log "accesso alla shell di emergenza (uid $(id -u), tty $emergency_tty)"
+
+# Una shell di login interattiva e funzionante su questa TTY.
+export PS1='nicoos-emergency:\w # '
+if [ -x /usr/bin/zsh ]; then
+    exec /usr/bin/zsh -i
+elif [ -x /bin/bash ]; then
+    exec /bin/bash -i
+else
+    exec /bin/sh -i
+fi

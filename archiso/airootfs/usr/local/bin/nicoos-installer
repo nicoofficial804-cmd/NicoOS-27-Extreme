@@ -1,0 +1,20 @@
+#!/bin/bash
+# /usr/local/bin/nicoos-installer
+#
+# Avvia l'installer Calamares sulla ISO live. Calamares richiede root;
+# la sessione live usa sudo senza password (il sistema installato no).
+set -u
+
+if [ "$(id -u)" -eq 0 ]; then
+    exec /usr/bin/calamares "$@"
+fi
+
+if sudo -n true 2>/dev/null; then
+    exec sudo -E /usr/bin/calamares "$@"
+fi
+
+if command -v pkexec >/dev/null 2>&1; then
+    exec pkexec /usr/bin/calamares "$@"
+fi
+
+exec sudo -E /usr/bin/calamares "$@"

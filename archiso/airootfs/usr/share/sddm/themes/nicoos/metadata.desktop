@@ -1,0 +1,18 @@
+[SddmGreeterTheme]
+Name=NicoOS 27 Extreme
+Description=Greeter NicoOS scuro ed estremo
+Author=NicoOS
+Copyright=(c) 2026 NicoOS
+License=MIT
+Type=sddm-theme
+Version=1.0
+Website=https://nicoos.dev
+ConfigFile=theme.conf
+# Il binario del greeter che SDDM deve eseguire per questo tema. Il valore
+# predefinito di SDDM è 5 (sddm/sddm/src/common/ThemeMetadata.cpp), cioè
+# /usr/bin/sddm-greeter, la build Qt5. NicoOS distribuisce solo Qt6, quindi un
+# tema senza questa chiave fa partire un greeter che non riesce a caricare le
+# sue librerie: esce con 127, la sessione del greeter muore e la macchina
+# resta su una TTY. Il valore 6 seleziona /usr/bin/sddm-greeter-qt6, quello
+# che NicoOS installa.
+QtVersion=6

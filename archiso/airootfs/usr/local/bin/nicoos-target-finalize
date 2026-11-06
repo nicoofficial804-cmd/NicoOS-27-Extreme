@@ -1,0 +1,181 @@
+#!/bin/bash
+# /usr/local/bin/nicoos-target-finalize
+#
+# Viene eseguito DENTRO il sistema di destinazione (shellprocess di Calamares,
+# dontChroot: false) dopo che l'initramfs è stato rigenerato e il bootloader
+# installato.
+#
+# Il suo compito è *dimostrare* che il sistema installato è completo e
+# avviabile da solo, non solo che la ISO live funzionava:
+#
+#   * l'initramfs deve essere stato ricostruito senza gli hook archiso
+#     (altrimenti il kernel installato cercherebbe uno squashfs e finirebbe in
+#     una shell di emergenza),
+#   * SDDM, Hyprland, la shell NicoOS e la shell di emergenza devono esistere,
+#   * la sessione deve essere raggiungibile come normale wayland-session,
+#   * il bootloader deve aver prodotto una voce per il kernel.
+#
+# Qui non si installa nulla: il root file system è stato scompattato completo.
+set -u
+
+log()  { printf '[nicoos-target-finalize] %s\n' "$*"; }
+warn() { printf '[nicoos-target-finalize] AVVISO: %s\n' "$*" >&2; }
+die()  { printf '[nicoos-target-finalize] ERRORE FATALE: %s\n' "$*" >&2; exit 1; }
+
+# ---------------------------------------------------------------------------
+# 1. L'initramfs deve essere autonomo (nessun hook archiso rimasto)
+# ---------------------------------------------------------------------------
+INITRAMFS=/boot/initramfs-linux.img
+if [ ! -f "$INITRAMFS" ]; then
+    die "$INITRAMFS non esiste - il sistema installato non può avviarsi"
+fi
+
+if command -v lsinitcpio >/dev/null 2>&1; then
+    if lsinitcpio "$INITRAMFS" 2>/dev/null | grep -q 'hooks/archiso'; then
+        die "$INITRAMFS contiene ancora gli hook live di archiso; il sistema installato non si avvierebbe"
+    fi
+    log "l'initramfs è autonomo (nessun hook archiso)"
+else
+    warn "lsinitcpio non disponibile, impossibile verificare il contenuto dell'initramfs"
+fi
+
+if [ -f /etc/mkinitcpio.conf.d/archiso.conf ]; then
+    rm -f /etc/mkinitcpio.conf.d/archiso.conf
+    warn "rimosso un drop-in archiso di mkinitcpio rimasto"
+fi
+
+# ---------------------------------------------------------------------------
+# 2. Contenuto del desktop
+# ---------------------------------------------------------------------------
+missing=0
+for f in /usr/bin/Hyprland /usr/bin/sddm /usr/bin/nicoos-shell \
+         /usr/bin/foot \
+         /usr/local/bin/nicoos-session /usr/local/bin/nicoos-emergency-shell \
+         /usr/share/wayland-sessions/nicoos.desktop \
+         /usr/share/sddm/themes/nicoos/Main.qml \
+         /usr/share/nicoos-shell/nicoos-shell.lua \
+         /etc/skel/.config/hypr/hyprland.lua \
+         /etc/skel/.config/hypr/nicoos-shell.lua; do
+    [ -e "$f" ] || { warn "mancante: $f"; missing=1; }
+done
+[ "$missing" -eq 0 ] || die "il desktop NicoOS installato è incompleto"
+
+chmod 0755 /usr/local/bin/nicoos-session \
+           /usr/local/bin/nicoos-emergency-shell 2>/dev/null || true
+chmod 0755 /usr/bin/nicoos-shell 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
+# 3. Nessun accesso automatico sul sistema installato
+# ---------------------------------------------------------------------------
+# Il modulo displaymanager di Calamares riscrive /etc/sddm.conf e aggiunge
+# sempre una sezione [Autologin] (con Session=<desktop>, e User=<nome> quando
+# l'autologin è stato richiesto). Le installazioni NicoOS chiedono la password
+# dell'account, quindi ogni sezione [Autologin] viene rimossa di nuovo qui,
+# dopo l'esecuzione di quel modulo, e viene eliminato ogni drop-in di
+# autologin sopravvissuto al supporto live.
+strip_autologin() {
+    f="$1"
+    [ -f "$f" ] || return 0
+    if grep -qi '^\[Autologin\]' "$f"; then
+        awk '
+            /^[[:space:]]*\[/ { skip = (tolower($0) ~ /^[[:space:]]*\[autologin\]/) }
+            !skip
+        ' "$f" >"$f.nicoos-tmp" && mv "$f.nicoos-tmp" "$f"
+        log "rimossa la sezione [Autologin] da $f"
+    fi
+}
+
+for f in /etc/sddm.conf /etc/sddm.conf.d/*.conf; do
+    strip_autologin "$f"
+done
+rm -f /etc/sddm.conf.d/*autologin*.conf
+
+# SDDM deve comunque usare il greeter NicoOS e avere come predefinita la
+# sessione NicoOS.
+install -d -m 0755 /etc/sddm.conf.d
+cat > /etc/sddm.conf.d/10-nicoos.conf <<'EOF'
+# /etc/sddm.conf.d/10-nicoos.conf — scritto dall'installer di NicoOS
+# Nessuna sezione [Autologin] di proposito: il sistema installato chiede
+# sempre la password dell'account.
+[Theme]
+Current=nicoos
+ThemeDir=/usr/share/sddm/themes
+
+[Users]
+DefaultSession=nicoos
+EOF
+
+# Il greeter NicoOS gira su Qt6. SDDM sceglie il greeter dai metadati del tema
+# (QtVersion); un tema che non richiede Qt6 riceve il sddm-greeter Qt5, che non
+# può girare su un sistema solo-Qt6 e lascia la macchina su una TTY. Avvisa a
+# voce alta se quella chiave dovesse sparire di nuovo.
+if [ ! -x /usr/bin/sddm-greeter-qt6 ]; then
+    die "/usr/bin/sddm-greeter-qt6 mancante - SDDM non potrebbe mostrare un greeter"
+fi
+if ! grep -qx 'QtVersion=6' /usr/share/sddm/themes/nicoos/metadata.desktop 2>/dev/null; then
+    warn "il tema SDDM di NicoOS non dichiara QtVersion=6; SDDM avvierebbe il greeter Qt5"
+fi
+
+# ---------------------------------------------------------------------------
+# 3b. Servizi del sistema installato
+# ---------------------------------------------------------------------------
+systemctl enable sddm.service          >/dev/null 2>&1 || warn "impossibile abilitare sddm"
+systemctl enable NetworkManager.service >/dev/null 2>&1 || warn "impossibile abilitare NetworkManager"
+systemctl enable bluetooth.service     >/dev/null 2>&1 || true
+systemctl enable power-profiles-daemon.service >/dev/null 2>&1 || true
+systemctl enable pipewire.socket pipewire-pulse.socket wireplumber.service >/dev/null 2>&1 || true
+systemctl set-default graphical.target >/dev/null 2>&1 || warn "impossibile impostare graphical.target come predefinito"
+
+# SDDM deve essere davvero il display manager di riferimento.
+if [ ! -e /etc/systemd/system/display-manager.service ]; then
+    ln -sf /usr/lib/systemd/system/sddm.service /etc/systemd/system/display-manager.service \
+        || warn "impossibile collegare display-manager.service a sddm"
+fi
+
+# zsh è la shell di login degli account NicoOS.
+command -v zsh >/dev/null 2>&1 && grep -qx '/usr/bin/zsh' /etc/shells || echo /usr/bin/zsh >> /etc/shells
+
+# ---------------------------------------------------------------------------
+# 4. Artefatti del bootloader
+# ---------------------------------------------------------------------------
+if [ -f /boot/grub/grub.cfg ]; then
+    if grep -q 'archisobasedir\|archisosearchuuid' /boot/grub/grub.cfg; then
+        die "/boot/grub/grub.cfg usa ancora la riga di comando del kernel della ISO live"
+    fi
+    log "configurazione GRUB presente e priva di parametri della ISO live"
+elif [ -d /boot/loader ] && [ -f /boot/loader/entries/nicoos.conf ]; then
+    log "configurazione systemd-boot presente"
+elif [ -d /boot/EFI ] || [ -d /boot/efi ] || [ -d /sys/firmware/efi ]; then
+    warn "nessuna configurazione GRUB trovata in /boot (sistema UEFI)"
+else
+    warn "nessuna configurazione GRUB trovata in /boot (sistema BIOS)"
+fi
+
+# ---------------------------------------------------------------------------
+# 5. Strumenti validi solo sul supporto di installazione
+# ---------------------------------------------------------------------------
+# L'installer non fa parte del sistema installato: il pacchetto `calamares`
+# (insieme a kpmcore e alle dipendenze usate solo da lui) viene rimosso dal
+# modulo `packages`, che gira dopo questo script. Qui si eliminano i file che
+# quel pacchetto non possiede: l'avviatore, la voce di menu e la
+# configurazione dell'installer, che altrimenti resterebbero orfani sul disco.
+rm -f /usr/local/bin/nicoos-installer
+rm -f /usr/share/applications/nicoos-install.desktop
+rm -rf /etc/calamares
+log "rimossi avviatore e configurazione dell'installer (calamares viene disinstallato)"
+
+# ---------------------------------------------------------------------------
+# 6. Contrassegna l'installazione
+# ---------------------------------------------------------------------------
+install -d -m 0755 /var/lib/nicoos
+cat > /var/lib/nicoos/install-info <<EOF
+distribution="NicoOS 27 Extreme"
+version="27"
+installed_at="$(date -Is)"
+installer="Calamares (strategia offline unpackfs di NicoOS)"
+desktop="Hyprland + SDDM + Shell NicoOS"
+kernel="$(ls /boot/vmlinuz-* 2>/dev/null | head -n1)"
+EOF
+
+log "NicoOS 27 Extreme installato è completo"
+exit 0

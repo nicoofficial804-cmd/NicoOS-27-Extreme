@@ -1,0 +1,7 @@
+# /etc/fstab: informazioni statiche sui file system.
+#
+# Questo è l'fstab della ISO live e resta vuoto di proposito: la radice live è
+# lo squashfs montato dall'initramfs di archiso. Calamares genera il vero
+# /etc/fstab del sistema installato (modulo fstab).
+#
+# <file system> <dir> <tipo> <opzioni> <dump> <pass>
