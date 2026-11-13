@@ -1,14 +1,14 @@
 import QtQuick
 import QtQuick.Effects
 
-// Icona della shell. Gli SVG sono disegnati in bianco pieno, quindi con la
-// tinta predefinita vengono mostrati cosi' come sono (nessun effetto,
-// nessun costo). Per qualsiasi altra tinta (es. avvisi rossi) l'immagine
-// bianca viene ricolorata con MultiEffect.
+// Icona della shell. Gli SVG sono disegnati in bianco pieno; la tinta
+// predefinita li ricolora nel rosso di NicoOS con MultiEffect. Con la tinta
+// bianca esplicita vengono mostrati cosi' come sono (nessun effetto,
+// nessun costo).
 Item {
     id: root
     property alias source: img.source
-    property color tint: "#ffffff"
+    property color tint: "#e3272b"
     property int iconSize: 16
     readonly property bool plain: Qt.colorEqual(tint, "#ffffff")
     // MultiEffect richiede shader; il renderer software non puo' disegnarlo,

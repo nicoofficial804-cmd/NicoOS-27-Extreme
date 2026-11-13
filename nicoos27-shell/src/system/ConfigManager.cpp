@@ -25,7 +25,7 @@ QString ConfigManager::configFilePath() const {
 }
 
 void ConfigManager::applyDefaults() {
-    m_accentColor = QColor(0x00, 0xd9, 0xff);
+    m_accentColor = QColor(0xe3, 0x27, 0x2b);
     m_panelOpacity = 0.72;
     m_panelPosition = PanelPosition::Top;
     m_animationSpeedMs = 180;
@@ -34,6 +34,7 @@ void ConfigManager::applyDefaults() {
     m_uiScale = 1.0;
     m_panelHeight = 34;
     m_workspaceWrapAround = true;
+    m_workspaceCount = 10;
 }
 
 void ConfigManager::load() {
@@ -45,7 +46,7 @@ void ConfigManager::load() {
             QTextStream out(&f);
             out << "# NicoOS 27 Extreme shell configuration\n"
                 << "[appearance]\n"
-                << "accent_color=#00d9ff\n"
+                << "accent_color=#e3272b\n"
                 << "panel_opacity=0.72\n"
                 << "ui_scale=1.0\n\n"
                 << "[panel]\n"
@@ -55,16 +56,17 @@ void ConfigManager::load() {
                 << "animation_speed_ms=180\n"
                 << "clock_format=HH:mm\n"
                 << "launcher_shortcut=SUPER,R\n"
-                << "workspace_wrap_around=true\n";
+                << "workspace_wrap_around=true\n"
+                << "workspace_count=10\n";
         }
     }
 
     m_settings = std::make_unique<QSettings>(path, QSettings::IniFormat);
 
-    const QString accent = m_settings->value("appearance/accent_color", "#00d9ff").toString();
+    const QString accent = m_settings->value("appearance/accent_color", "#e3272b").toString();
     m_accentColor = QColor(accent);
     if (!m_accentColor.isValid()) {
-        m_accentColor = QColor(0x00, 0xd9, 0xff);
+        m_accentColor = QColor(0xe3, 0x27, 0x2b);
     }
 
     m_panelOpacity = m_settings->value("appearance/panel_opacity", 0.72).toDouble();
@@ -80,6 +82,7 @@ void ConfigManager::load() {
     m_clockFormat = m_settings->value("behavior/clock_format", "HH:mm").toString();
     m_launcherShortcut = m_settings->value("behavior/launcher_shortcut", "SUPER,R").toString();
     m_workspaceWrapAround = m_settings->value("behavior/workspace_wrap_around", true).toBool();
+    m_workspaceCount = qBound(1, m_settings->value("behavior/workspace_count", 10).toInt(), 20);
 
     m_iconTheme = m_settings->value("appearance/icon_theme").toString();
     m_wallpaperPath = m_settings->value("wallpaper/path").toString();

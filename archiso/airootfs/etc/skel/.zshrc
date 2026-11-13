@@ -18,7 +18,7 @@ setopt AUTO_CD AUTO_PUSHD PUSHD_IGNORE_DUPS INTERACTIVE_COMMENTS
 
 # --- prompt: minimale, scuro, con accento -----------------------------------
 autoload -Uz colors && colors
-PROMPT='%F{#00d9ff}%n%f %F{#5a6b80}%~%f %F{#7a5cff}❯%f '
+PROMPT='%F{#e3272b}%n%f %F{#5a6b80}%~%f %F{#b41e22}❯%f '
 RPROMPT='%F{#5a6b80}%?%f'
 
 # --- alias ------------------------------------------------------------------

@@ -1,4 +1,3 @@
-
 import QtQuick
 import QtQuick.Window 2.15
 
@@ -7,10 +6,12 @@ Rectangle {
 
     width: Screen.width
     height: Screen.height
-    color: "#05070d"
+    color: "#000000"
 
-    property string accent: "#00d9ff"
-    property string accent2: "#7a5cff"
+    property string accent: "#e3272b"
+    property string accent2: "#b41e22"
+    property string textColor: "#e3272b"
+    property string textDim: "#b41e22"
     property string errorText: ""
     property bool loggingIn: false
     property string userName: "nicoos"
@@ -26,8 +27,8 @@ Rectangle {
 
     Rectangle {
         anchors.fill: parent
-        color: "#05070d"
-        opacity: 0.45
+        color: "#000000"
+        opacity: 0.94
     }
 
     // Benvenuto
@@ -38,7 +39,7 @@ Rectangle {
 
         Text {
             text: "Benvenuto."
-            color: "#e6f5ff"
+            color: root.textColor
             font.family: "JetBrainsMono Nerd Font"
             font.pixelSize: 42
             font.bold: true
@@ -54,9 +55,9 @@ Rectangle {
         anchors.rightMargin: 140
         anchors.verticalCenter: parent.verticalCenter
         radius: 14
-        color: "#0b1220"
+        color: "#0a0a0a"
         border.width: 1
-        border.color: "#1b2b3d"
+        border.color: "#3a1215"
         opacity: 0.97
 
         Column {
@@ -66,7 +67,7 @@ Rectangle {
 
             Text {
                 text: "Accedi"
-                color: "#e6f5ff"
+                color: root.textColor
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 24
                 font.bold: true
@@ -76,7 +77,7 @@ Rectangle {
 
             Text {
                 text: "NOME UTENTE"
-                color: "#5a6b80"
+                color: root.textDim
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 10
                 font.letterSpacing: 2
@@ -86,10 +87,10 @@ Rectangle {
                 width: parent.width
                 height: 42
                 radius: 8
-                color: "#070c14"
+                color: "#121212"
                 border.width: 1
                 border.color: userField.activeFocus
-                    ? root.accent : "#1b2b3d"
+                    ? root.accent : "#3a1215"
 
                 TextInput {
                     id: userField
@@ -97,7 +98,7 @@ Rectangle {
                     anchors.leftMargin: 12
                     anchors.rightMargin: 12
                     verticalAlignment: TextInput.AlignVCenter
-                    color: "#e6f5ff"
+                    color: root.textColor
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 14
                     selectByMouse: true
@@ -109,7 +110,7 @@ Rectangle {
 
             Text {
                 text: "PASSWORD"
-                color: "#5a6b80"
+                color: root.textDim
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 10
                 font.letterSpacing: 2
@@ -119,10 +120,10 @@ Rectangle {
                 width: parent.width
                 height: 42
                 radius: 8
-                color: "#070c14"
+                color: "#121212"
                 border.width: 1
                 border.color: passwordField.activeFocus
-                    ? root.accent : "#1b2b3d"
+                    ? root.accent : "#3a1215"
 
                 TextInput {
                     id: passwordField
@@ -130,7 +131,7 @@ Rectangle {
                     anchors.leftMargin: 12
                     anchors.rightMargin: 12
                     verticalAlignment: TextInput.AlignVCenter
-                    color: "#e6f5ff"
+                    color: root.textColor
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 14
                     echoMode: TextInput.Password
@@ -144,7 +145,7 @@ Rectangle {
 
             Text {
                 text: root.errorText
-                color: "#ff5c7a"
+                color: "#ff3b3b"
                 visible: root.errorText !== ""
                 font.family: "JetBrainsMono Nerd Font"
                 font.pixelSize: 11
@@ -173,7 +174,7 @@ Rectangle {
                     anchors.centerIn: parent
                     text: root.loggingIn
                         ? "ACCESSO IN CORSO…" : "ACCEDI"
-                    color: "#05070d"
+                    color: "#000000"
                     font.family: "JetBrainsMono Nerd Font"
                     font.pixelSize: 13
                     font.bold: true
@@ -195,7 +196,7 @@ Rectangle {
         anchors.top: parent.top
         anchors.right: parent.right
         anchors.margins: 48
-        color: "#e6f5ff"
+        color: root.textColor
         font.family: "JetBrainsMono Nerd Font"
         font.pixelSize: 40
         font.bold: true

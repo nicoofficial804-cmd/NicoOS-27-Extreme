@@ -9,8 +9,8 @@
 -- scorciatoie della shell.
 
 local terminal = "foot"
-local accent   = "rgba(00d9ffee)"
-local accent2  = "rgba(7a5cffee)"
+local accent   = "rgba(e3272bee)"
+local accent2  = "rgba(b41e22ee)"
 
 -----------------
 ---- MONITOR ----
@@ -70,7 +70,7 @@ hl.config({
         border_size = 2,
         col = {
             active_border   = { colors = { accent, accent2 }, angle = 45 },
-            inactive_border = "rgba(2a3546aa)",
+            inactive_border = "rgba(2a0d0faa)",
         },
         resize_on_border = true,
         allow_tearing    = false,
@@ -87,7 +87,7 @@ hl.config({
             enabled      = true,
             range        = 12,
             render_power = 3,
-            color        = 0xee05080e,
+            color        = 0xee000000,
         },
 
         blur = {

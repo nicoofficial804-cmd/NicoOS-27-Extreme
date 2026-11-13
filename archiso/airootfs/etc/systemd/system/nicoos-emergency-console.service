@@ -1,0 +1,11 @@
+[Unit]
+Description=NicoOS: console di emergenza su una VT di testo
+Documentation=file:/usr/local/bin/nicoos-emergency-console
+After=systemd-user-sessions.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/nicoos-emergency-console
+# openvt resta in attesa della shell: il servizio vive quanto la console, quindi
+# non deve scattare il timeout di avvio.
+TimeoutStartSec=infinity

@@ -1,0 +1,51 @@
+#!/bin/sh
+# /usr/local/bin/nicoos-plymouth-fade-out
+#
+# NicoOS 27 Extreme — spegne la schermata di avvio in dissolvenza.
+#
+# Plymouth chiude la splash nello stesso istante in cui riceve `quit`, quindi
+# il tema non ha il tempo di animare l'uscita. Questo script manda prima lo
+# stato __nicoos_fade__ (che nicoos.script riconosce come "inizia a
+# spegnerti") e aspetta la fine del video di avvio più la dissolvenza.
+#
+# L'attesa si misura sull'età di plymouthd, che parte insieme all'animazione:
+# se il video è già finito basta la sola dissolvenza. Un sonno fisso di
+# VIDEO_SECONDS farebbe perdere 12 s di nero a ogni boot più lento del video
+# (per esempio la live avviata da chiavetta USB).
+#
+# VIDEO_SECONDS, FADE_SECONDS e MARGIN_SECONDS vanno tenuti allineati a
+# VIDEO_FRAMES, VIDEO_FRAME_SECONDS e FADE_OUT_SECONDS di nicoos.script.
+set -u
+
+VIDEO_SECONDS=4
+FADE_SECONDS=0.35
+MARGIN_SECONDS=0.05
+PID_FILE=/run/plymouth/pid
+
+# Senza splash attiva (nessun `splash` sulla riga di comando) non c'è niente da
+# spegnere e non si fa perdere tempo.
+if [ ! -e "$PID_FILE" ]; then
+    exit 0
+fi
+
+/usr/bin/plymouth update --status=__nicoos_fade__ 2>/dev/null || true
+
+# Secondi di vita di plymouthd. Se `ps` non c'è (o il pid non è più vivo) si
+# ricade sull'attesa piena, che è sempre corretta, solo più lunga.
+age=0
+if command -v ps >/dev/null 2>&1; then
+    age=$(ps -o etimes= -p "$(cat "$PID_FILE" 2>/dev/null)" 2>/dev/null | tr -d ' ')
+fi
+case "$age" in
+    '' | *[!0-9]*) age=0 ;;
+esac
+
+wait_seconds=$(awk -v age="$age" -v video="$VIDEO_SECONDS" \
+                   -v fade="$FADE_SECONDS" -v margin="$MARGIN_SECONDS" \
+                   'BEGIN {
+                        left = video - age + fade + margin;
+                        if (left < fade) left = fade;
+                        printf "%.2f", left;
+                    }')
+
+sleep "$wait_seconds"

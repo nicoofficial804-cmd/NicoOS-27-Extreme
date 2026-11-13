@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=NicoOS 27 Extreme
+Description=Animazione di avvio NicoOS 27 EXTREME: video, anello di caricamento e logo
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/nicoos
+ScriptFile=/usr/share/plymouth/themes/nicoos/nicoos.script

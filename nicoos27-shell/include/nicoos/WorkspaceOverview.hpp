@@ -27,6 +27,11 @@ struct WindowRow {
     bool fullscreen{};
 };
 
+// Aree di lavoro della sessione: quelle vive di Hyprland più le 1..N
+// configurate ([behavior] workspace_count), che restano elencate anche quando
+// sono vuote — Hyprland le distrugge appena le si lascia — così il pannello e
+// la panoramica mostrano sempre le stesse aree e trascinarci una finestra le
+// crea davvero.
 class WorkspaceListModel : public QAbstractListModel {
     Q_OBJECT
 

@@ -6,8 +6,8 @@ Rectangle {
     id: root
     anchors.fill: parent
     radius: 22
-    color: Qt.rgba(0.045, 0.06, 0.085, 0.93)
-    border.color: Qt.rgba(1, 1, 1, 0.10)
+    color: Qt.rgba(0.02, 0.02, 0.02, 0.93)
+    border.color: Qt.rgba(0.89, 0.15, 0.17, 0.10)
     border.width: 1
     focus: true
     Keys.onEscapePressed: surface.hideSurface()
@@ -29,8 +29,8 @@ Rectangle {
         width: size
         height: size
         radius: size / 2
-        color: rbTap.pressed ? Qt.rgba(1, 1, 1, 0.26)
-                             : (rbHover.hovered ? Qt.rgba(1, 1, 1, 0.17) : Qt.rgba(1, 1, 1, strong ? 0.15 : 0.07))
+        color: rbTap.pressed ? Qt.rgba(0.89, 0.15, 0.17, 0.26)
+                             : (rbHover.hovered ? Qt.rgba(0.89, 0.15, 0.17, 0.17) : Qt.rgba(0.89, 0.15, 0.17, strong ? 0.15 : 0.07))
         Behavior on color { ColorAnimation { duration: 120 } }
         IconGlyph { anchors.centerIn: parent; source: rb.icon; iconSize: Math.round(rb.size * 0.46) }
         HoverHandler { id: rbHover }
@@ -46,7 +46,7 @@ Rectangle {
             width: s.availableWidth
             height: 6
             radius: 3
-            color: Qt.rgba(1, 1, 1, 0.14)
+            color: Qt.rgba(0.89, 0.15, 0.17, 0.14)
             Rectangle {
                 width: s.visualPosition * parent.width
                 height: parent.height
@@ -60,7 +60,7 @@ Rectangle {
             width: s.pressed ? 20 : 16
             height: width
             radius: width / 2
-            color: "#ffffff"
+            color: "#ff6b6b"
             Behavior on width { NumberAnimation { duration: 90 } }
         }
     }
@@ -84,7 +84,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Text {
                     text: "Centro di controllo"
-                    color: "#ffffff"
+                    color: "#e3272b"
                     font.pixelSize: 16
                     font.weight: Font.DemiBold
                     Layout.fillWidth: true
@@ -98,7 +98,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 78
                 radius: 16
-                color: Qt.rgba(1, 1, 1, 0.06)
+                color: Qt.rgba(0.89, 0.15, 0.17, 0.06)
 
                 RowLayout {
                     anchors.fill: parent
@@ -111,7 +111,7 @@ Rectangle {
                         Text {
                             Layout.fillWidth: true
                             text: media.title.length > 0 ? media.title : "In riproduzione"
-                            color: "#ffffff"
+                            color: "#e3272b"
                             font.pixelSize: 13
                             font.weight: Font.DemiBold
                             elide: Text.ElideRight
@@ -119,7 +119,7 @@ Rectangle {
                         Text {
                             Layout.fillWidth: true
                             text: media.artist
-                            color: Qt.rgba(1, 1, 1, 0.6)
+                            color: Qt.rgba(0.89, 0.15, 0.17, 0.6)
                             font.pixelSize: 11
                             elide: Text.ElideRight
                         }
@@ -217,7 +217,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: cardH
                 radius: 16
-                color: Qt.rgba(1, 1, 1, 0.06)
+                color: Qt.rgba(0.89, 0.15, 0.17, 0.06)
                 clip: true
 
                 Item {
@@ -242,14 +242,14 @@ Rectangle {
                             Text {
                                 Layout.fillWidth: true
                                 text: networkClient.connected ? networkClient.ssid : "Non connesso"
-                                color: "#ffffff"
+                                color: "#e3272b"
                                 font.pixelSize: 13
                                 font.weight: Font.DemiBold
                                 elide: Text.ElideRight
                             }
                             Text {
                                 text: networkClient.kindLabel
-                                color: Qt.rgba(1, 1, 1, 0.55)
+                                color: Qt.rgba(0.89, 0.15, 0.17, 0.55)
                                 font.pixelSize: 11
                             }
                         }
@@ -285,7 +285,7 @@ Rectangle {
                         width: ListView.view.width
                         height: 40
                         radius: 10
-                        color: wifiHover.hovered ? Qt.rgba(1, 1, 1, 0.09) : "transparent"
+                        color: wifiHover.hovered ? Qt.rgba(0.89, 0.15, 0.17, 0.09) : "transparent"
                         Behavior on color { ColorAnimation { duration: 110 } }
 
                         RowLayout {
@@ -301,7 +301,7 @@ Rectangle {
                             Text {
                                 Layout.fillWidth: true
                                 text: ssid
-                                color: "#ffffff"
+                                color: "#e3272b"
                                 font.pixelSize: 13
                                 font.weight: active ? Font.DemiBold : Font.Normal
                                 elide: Text.ElideRight
@@ -332,7 +332,7 @@ Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: !wifi.available ? "nmcli non disponibile"
                                           : (wifi.busy ? "Ricerca reti…" : "Nessuna rete trovata")
-                    color: Qt.rgba(1, 1, 1, 0.5)
+                    color: Qt.rgba(0.89, 0.15, 0.17, 0.5)
                     font.pixelSize: 12
                 }
 
@@ -345,7 +345,7 @@ Rectangle {
                     anchors.margins: 8
                     height: 40
                     radius: 10
-                    color: Qt.rgba(1, 1, 1, 0.09)
+                    color: Qt.rgba(0.89, 0.15, 0.17, 0.09)
 
                     RowLayout {
                         anchors.fill: parent
@@ -355,7 +355,7 @@ Rectangle {
                         TextInput {
                             id: pwInput
                             Layout.fillWidth: true
-                            color: "#ffffff"
+                            color: "#e3272b"
                             font.pixelSize: 13
                             echoMode: TextInput.Password
                             verticalAlignment: TextInput.AlignVCenter
@@ -368,7 +368,7 @@ Rectangle {
                                 visible: pwInput.text.length === 0
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: "Password per " + netCard.pendingSsid
-                                color: Qt.rgba(1, 1, 1, 0.4)
+                                color: Qt.rgba(0.89, 0.15, 0.17, 0.4)
                                 font.pixelSize: 13
                             }
                         }
@@ -390,7 +390,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 76
                 radius: 16
-                color: Qt.rgba(1, 1, 1, 0.06)
+                color: Qt.rgba(0.89, 0.15, 0.17, 0.06)
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -403,7 +403,7 @@ Rectangle {
                             size: 28
                             onClicked: audioClient.toggleMute()
                         }
-                        Text { text: "Volume"; color: "#ffffff"; font.pixelSize: 13; Layout.fillWidth: true }
+                        Text { text: "Volume"; color: "#e3272b"; font.pixelSize: 13; Layout.fillWidth: true }
                         Text {
                             text: audioClient.muted ? "Muto" : audioClient.volume + "%"
                             color: accentColor
@@ -435,7 +435,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 76
                 radius: 16
-                color: Qt.rgba(1, 1, 1, 0.06)
+                color: Qt.rgba(0.89, 0.15, 0.17, 0.06)
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -444,7 +444,7 @@ Rectangle {
                     RowLayout {
                         spacing: 10
                         IconGlyph { source: "qrc:/nicoos/icons/brightness.svg"; iconSize: 18 }
-                        Text { text: "Luminosità"; color: "#ffffff"; font.pixelSize: 13; Layout.fillWidth: true }
+                        Text { text: "Luminosità"; color: "#e3272b"; font.pixelSize: 13; Layout.fillWidth: true }
                         Text { text: brightnessClient.brightnessPercent + "%"; color: accentColor; font.pixelSize: 12 }
                     }
                     GlassSlider {
@@ -470,7 +470,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 56
                 radius: 16
-                color: Qt.rgba(1, 1, 1, 0.06)
+                color: Qt.rgba(0.89, 0.15, 0.17, 0.06)
 
                 RowLayout {
                     anchors.fill: parent
@@ -478,7 +478,7 @@ Rectangle {
                     anchors.rightMargin: 14
                     spacing: 12
                     IconGlyph { source: "qrc:/nicoos/icons/bluetooth.svg"; iconSize: 18; opacity: bluetoothClient.powered ? 1.0 : 0.45 }
-                    Text { text: "Bluetooth"; color: "#ffffff"; font.pixelSize: 13; Layout.fillWidth: true }
+                    Text { text: "Bluetooth"; color: "#e3272b"; font.pixelSize: 13; Layout.fillWidth: true }
                     Switch {
                         checked: bluetoothClient.powered
                         onToggled: bluetoothClient.setPowered(checked)

@@ -1,0 +1,9 @@
+[Unit]
+Description=NicoOS: richiesta di una console di emergenza
+
+[Path]
+# Scritto da /usr/local/bin/nicoos-session quando Hyprland non può partire.
+PathExistsGlob=/run/nicoos/emergency-request*
+
+[Install]
+WantedBy=paths.target

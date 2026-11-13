@@ -1,12 +1,12 @@
 /* === NicoOS 27 Extreme — presentazione dell'installer ===
  *
  * Sostituisce la presentazione predefinita di Calamares. Quella lasciava
- * trasparente lo sfondo delle slide: il contenitore QtQuick dietro di esse è
- * bianco, quindi alcune diapositive comparivano completamente bianche.
+ * trasparente lo sfondo delle slide, quindi alcune diapositive comparivano
+ * con il colore estraneo del contenitore.
  *
- * Qui lo sfondo è un rettangolo scuro opaco, e colori di testo e titoli sono
- * impostati esplicitamente (i valori predefiniti sono nero su bianco): la
- * presentazione resta coerente con il dark mode del resto di NicoOS.
+ * Qui lo sfondo è un rettangolo nero opaco e colori di testo e titoli sono
+ * impostati esplicitamente: titoli e testo nel rosso di NicoOS (#e3272b e la
+ * sua variante più chiara #ff6b6b), gli stessi due colori primari del logo.
  */
 
 import QtQuick 2.0
@@ -15,24 +15,24 @@ import calamares.slideshow 1.0
 Presentation {
     id: presentation
 
-    // Testi chiari su fondo scuro.
-    textColor: "#dbe9f6"
-    titleColor: "#00d9ff"
+    // Testo rosso su fondo nero, titoli nel rosso del logo.
+    textColor: "#ff6b6b"
+    titleColor: "#e3272b"
     fontFamily: "DejaVu Sans"
 
-    // Sfondo opaco: nessuna slide può più mostrare il bianco del contenitore.
+    // Sfondo opaco: nessuna slide può più mostrare il colore del contenitore.
     Rectangle {
         anchors.fill: parent
         z: -2
         gradient: Gradient {
             orientation: Gradient.Vertical
-            GradientStop { position: 0.0;  color: "#0a1220" }
-            GradientStop { position: 0.55; color: "#05070d" }
-            GradientStop { position: 1.0;  color: "#04060b" }
+            GradientStop { position: 0.0;  color: "#000000" }
+            GradientStop { position: 0.55; color: "#0a0a0a" }
+            GradientStop { position: 1.0;  color: "#141414" }
         }
     }
 
-    // Barretta d'accento in alto, la stessa dei pannelli della shell.
+    // Barretta d'accento in alto, nel rosso del logo.
     Rectangle {
         anchors.top: parent.top
         anchors.left: parent.left
@@ -41,8 +41,8 @@ Presentation {
         z: -1
         gradient: Gradient {
             orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: "#00d9ff" }
-            GradientStop { position: 1.0; color: "#7a5cff" }
+            GradientStop { position: 0.0; color: "#e3272b" }
+            GradientStop { position: 1.0; color: "#b41e22" }
         }
     }
 
@@ -54,7 +54,7 @@ Presentation {
         width: 92
         height: 92
         fillMode: Image.PreserveAspectFit
-        opacity: 0.85
+        opacity: 1.0
         z: -1
     }
 

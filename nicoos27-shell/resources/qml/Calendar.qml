@@ -7,8 +7,8 @@ Rectangle {
     id: root
     anchors.fill: parent
     radius: 22
-    color: Qt.rgba(0.045, 0.06, 0.085, 0.94)
-    border.color: Qt.rgba(1, 1, 1, 0.10)
+    color: Qt.rgba(0.02, 0.02, 0.02, 0.94)
+    border.color: Qt.rgba(0.89, 0.15, 0.17, 0.10)
     border.width: 1
     focus: true
     Keys.onEscapePressed: surface.hideSurface()
@@ -51,14 +51,14 @@ Rectangle {
             spacing: 0
             Text {
                 text: Qt.formatDateTime(root.now, "HH:mm:ss")
-                color: "#ffffff"
+                color: "#e3272b"
                 font.pixelSize: 36
                 font.weight: Font.Light
             }
             Text {
                 text: Qt.locale().dayName(root.now.getDay(), Locale.LongFormat) + " " +
                       root.now.getDate() + " " + Qt.locale().monthName(root.now.getMonth(), Locale.LongFormat)
-                color: Qt.rgba(1, 1, 1, 0.6)
+                color: Qt.rgba(0.89, 0.15, 0.17, 0.6)
                 font.pixelSize: 13
             }
         }
@@ -67,7 +67,7 @@ Rectangle {
             Layout.fillWidth: true
             Text {
                 text: Qt.locale().monthName(root.viewMonth, Locale.LongFormat) + " " + root.viewYear
-                color: "#ffffff"
+                color: "#e3272b"
                 font.pixelSize: 15
                 font.weight: Font.DemiBold
                 Layout.fillWidth: true
@@ -78,7 +78,7 @@ Rectangle {
                     Layout.preferredWidth: 28
                     Layout.preferredHeight: 28
                     radius: 14
-                    color: navTap.pressed ? Qt.rgba(1, 1, 1, 0.22) : (navHover.hovered ? Qt.rgba(1, 1, 1, 0.13) : Qt.rgba(1, 1, 1, 0.06))
+                    color: navTap.pressed ? Qt.rgba(0.89, 0.15, 0.17, 0.22) : (navHover.hovered ? Qt.rgba(0.89, 0.15, 0.17, 0.13) : Qt.rgba(0.89, 0.15, 0.17, 0.06))
                     Behavior on color { ColorAnimation { duration: 110 } }
                     IconGlyph {
                         anchors.centerIn: parent
@@ -105,7 +105,7 @@ Rectangle {
                     Layout.preferredWidth: 1
                     horizontalAlignment: Text.AlignHCenter
                     text: Qt.locale().dayName((index + 1) % 7, Locale.ShortFormat).substring(0, 3)
-                    color: Qt.rgba(1, 1, 1, 0.45)
+                    color: Qt.rgba(0.89, 0.15, 0.17, 0.45)
                     font.pixelSize: 11
                 }
             }
@@ -133,7 +133,7 @@ Rectangle {
                         anchors.centerIn: parent
                         visible: inMonth
                         text: dayNum
-                        color: isToday ? "#06121a" : "#ffffff"
+                        color: isToday ? "#000000" : "#e3272b"
                         font.pixelSize: 13
                         font.weight: isToday ? Font.DemiBold : Font.Normal
                     }

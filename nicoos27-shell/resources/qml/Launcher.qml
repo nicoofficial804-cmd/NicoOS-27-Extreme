@@ -4,7 +4,7 @@ import QtQuick.Layouts
 Rectangle {
     id: root
     anchors.fill: parent
-    color: Qt.rgba(0.04, 0.05, 0.07, 0.88)
+    color: Qt.rgba(0.02, 0.02, 0.02, 0.88)
     radius: 18
     border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.35)
     border.width: 1
@@ -30,7 +30,7 @@ Rectangle {
         radius: parent.radius
         gradient: Gradient {
             orientation: Gradient.Vertical
-            GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.03) }
+            GradientStop { position: 0.0; color: Qt.rgba(0.89, 0.15, 0.17, 0.03) }
             GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.08) }
         }
     }
@@ -45,7 +45,7 @@ Rectangle {
             width: parent.width
             height: 46
             radius: 12
-            color: Qt.rgba(1, 1, 1, 0.05)
+            color: Qt.rgba(0.89, 0.15, 0.17, 0.05)
             border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.4)
             border.width: searchInput.activeFocus ? 1.4 : 1
 
@@ -64,7 +64,7 @@ Rectangle {
                 TextInput {
                     id: searchInput
                     Layout.fillWidth: true
-                    color: "#eaf9ff"
+                    color: "#e3272b"
                     font.pixelSize: 16
                     focus: true
                     onTextChanged: {
@@ -79,7 +79,7 @@ Rectangle {
                     Text {
                         visible: searchInput.text.length === 0
                         text: "Cerca applicazioni…"
-                        color: Qt.rgba(1, 1, 1, 0.35)
+                        color: Qt.rgba(0.89, 0.15, 0.17, 0.35)
                         font.pixelSize: 16
                         anchors.verticalCenter: parent.verticalCenter
                     }
@@ -163,7 +163,7 @@ Rectangle {
                         Text {
                             Layout.fillWidth: true
                             text: name
-                            color: "#eaf9ff"
+                            color: "#e3272b"
                             font.pixelSize: 14
                             elide: Text.ElideRight
                             maximumLineCount: 1
@@ -173,7 +173,7 @@ Rectangle {
                             Layout.fillWidth: true
                             visible: comment.length > 0
                             text: comment
-                            color: Qt.rgba(1, 1, 1, 0.45)
+                            color: Qt.rgba(0.89, 0.15, 0.17, 0.45)
                             font.pixelSize: 11
                             elide: Text.ElideRight
                             maximumLineCount: 1

@@ -1,5 +1,17 @@
 # Registro delle modifiche
 
+## Non rilasciato
+
+### Aggiunto
+- **Aree di lavoro sempre presenti.** La shell elencava solo le aree che
+  Hyprland teneva in vita; poiché Hyprland distrugge un'area vuota appena la si
+  lascia, in pratica restava un solo puntino e non c'era modo di trascinare una
+  finestra su un'area nuova. Pannello e panoramica mostrano ora sempre le aree
+  1..N (`[behavior] workspace_count`, default 10, massimo 20) insieme a quelle
+  vive — comprese aree con nome o con id oltre N. Cambio area, clic sul puntino
+  e trascinamento creano davvero l'area in Hyprland, che resta quindi una
+  normale area del compositore e non uno stato interno della shell.
+
 ## 1.2.2
 
 ### Corretto

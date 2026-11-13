@@ -1,26 +1,27 @@
 /* /etc/calamares/branding/nicoos/stylesheet.qss
  *
- * Aspetto scuro "extreme" di NicoOS per l'interfaccia Calamares basata su
- * widget. Volutamente semplice: nessun gradiente, nessuna immagine per
- * singolo widget, così l'installer resta leggero su una VM live con
- * rendering software.
+ * Aspetto nero "extreme" di NicoOS per l'interfaccia Calamares basata su
+ * widget: superfici nere e testo rosso NicoOS (#e3272b, lo stesso rosso del
+ * logo ufficiale nicoos27extreme.png). Non resta alcun bianco di sfondo.
+ * Volutamente semplice: nessun gradiente, nessuna immagine per singolo widget,
+ * così l'installer resta leggero su una VM live con rendering software.
  */
-/* Base scura per ogni widget dell'installer. Alcune pagine non disegnano il
- * proprio sfondo (e il contenitore della presentazione QML è un QQuickWidget
- * bianco): senza questa regola comparivano aree e diapositive bianche. Le
- * regole più specifiche qui sotto hanno comunque la precedenza. */
+/* Base nera per ogni widget dell'installer. Alcune pagine non disegnano il
+ * proprio sfondo (e il contenitore della presentazione QML è un QQuickWidget):
+ * senza questa regola comparivano aree con colori diversi. Le regole più
+ * specifiche qui sotto hanno comunque la precedenza. */
 QWidget {
-    background-color: #05070d;
-    color: #dbe9f6;
+    background-color: #000000;
+    color: #e3272b;
 }
 
 #mainApp {
-    background: #05070d;
+    background: #000000;
 }
 
 QDialog, QMenu, QMenuBar, QToolBar, QStatusBar, QAbstractScrollArea {
-    background-color: #080d16;
-    color: #dbe9f6;
+    background-color: #000000;
+    color: #e3272b;
 }
 
 QMenu::item {
@@ -29,8 +30,8 @@ QMenu::item {
 }
 
 QMenu::item:selected {
-    background: #0d2b3a;
-    color: #00d9ff;
+    background: #e3272b;
+    color: #000000;
 }
 
 /* Etichette, caselle e schede lasciano trasparire lo sfondo della pagina. */
@@ -39,12 +40,12 @@ QLabel, QCheckBox, QRadioButton, QGroupBox, QTabWidget, QToolButton {
 }
 
 #sidebarApp {
-    background: #080d16;
-    border-right: 1px solid #14202e;
+    background: #0a0a0a;
+    border-right: 1px solid #2a0d0f;
 }
 
 #sidebarApp QLabel {
-    color: #5a6b80;
+    color: #b41e22;
 }
 
 #logoApp {
@@ -52,68 +53,75 @@ QLabel, QCheckBox, QRadioButton, QGroupBox, QTabWidget, QToolButton {
 }
 
 QLabel {
-    color: #dbe9f6;
+    color: #e3272b;
 }
 
 QLabel#heading,
 QLabel#title {
-    color: #00d9ff;
+    color: #e3272b;
     font-weight: bold;
 }
 
 QLineEdit, QPlainTextEdit, QTextEdit, QComboBox, QSpinBox, QDoubleSpinBox {
-    background: #070c14;
-    border: 1px solid #1b2b3d;
+    background: #121212;
+    border: 1px solid #3a1215;
     border-radius: 6px;
-    color: #e6f5ff;
+    color: #e3272b;
     padding: 4px 8px;
-    selection-background-color: #00d9ff;
-    selection-color: #05070d;
+    selection-background-color: #e3272b;
+    selection-color: #000000;
 }
 
 QLineEdit:focus, QPlainTextEdit:focus, QComboBox:focus, QSpinBox:focus {
-    border: 1px solid #00d9ff;
+    border: 1px solid #e3272b;
 }
 
 QPushButton {
-    background: #0d1622;
-    border: 1px solid #1b2b3d;
+    background: #171717;
+    border: 1px solid #3a1215;
     border-radius: 6px;
-    color: #e6f5ff;
+    color: #e3272b;
     padding: 6px 14px;
 }
 
 QPushButton:hover {
-    border: 1px solid #00d9ff;
-    color: #00d9ff;
+    border: 1px solid #e3272b;
+    color: #ff6b6b;
 }
 
 QPushButton:default {
-    background: #00d9ff;
-    color: #05070d;
+    background: #e3272b;
+    border: 1px solid #e3272b;
+    color: #000000;
     font-weight: bold;
 }
 
+QPushButton:default:hover {
+    background: #c4161c;
+    border-color: #c4161c;
+    color: #000000;
+}
+
 QPushButton:disabled {
-    color: #3f5064;
-    border-color: #14202e;
+    color: #7a2a2d;
+    border-color: #2a0d0f;
 }
 
 QListView, QTreeView, QTableView {
-    background: #070c14;
-    border: 1px solid #1b2b3d;
+    background: #0a0a0a;
+    border: 1px solid #3a1215;
     border-radius: 6px;
-    color: #e6f5ff;
-    alternate-background-color: #0a1220;
+    color: #e3272b;
+    alternate-background-color: #111111;
 }
 
 QListView::item:selected, QTreeView::item:selected {
-    background: #0d2b3a;
-    color: #00d9ff;
+    background: #e3272b;
+    color: #000000;
 }
 
 QGroupBox {
-    border: 1px solid #1b2b3d;
+    border: 1px solid #2a0d0f;
     border-radius: 8px;
     margin-top: 12px;
     padding-top: 8px;
@@ -122,49 +130,49 @@ QGroupBox {
 QGroupBox::title {
     subcontrol-origin: margin;
     left: 10px;
-    color: #00d9ff;
+    color: #e3272b;
 }
 
 QProgressBar {
-    background: #070c14;
-    border: 1px solid #1b2b3d;
+    background: #121212;
+    border: 1px solid #2a0d0f;
     border-radius: 6px;
     text-align: center;
-    color: #e6f5ff;
+    color: #e3272b;
 }
 
 QProgressBar::chunk {
-    background: #00d9ff;
+    background: #e3272b;
     border-radius: 5px;
 }
 
 QTabWidget::pane {
-    border: 1px solid #1b2b3d;
+    border: 1px solid #2a0d0f;
 }
 
 QTabBar::tab {
-    background: #0a1220;
-    color: #8fa6bd;
+    background: #111111;
+    color: #b41e22;
     padding: 6px 14px;
 }
 
 QTabBar::tab:selected {
-    background: #0d2b3a;
-    color: #00d9ff;
+    background: #000000;
+    color: #e3272b;
 }
 
 QScrollBar:vertical {
-    background: #05070d;
+    background: #0a0a0a;
     width: 10px;
 }
 
 QScrollBar::handle:vertical {
-    background: #1b2b3d;
+    background: #7a1a1e;
     border-radius: 5px;
 }
 
 QToolTip {
-    background: #0b1220;
-    color: #e6f5ff;
-    border: 1px solid #00d9ff;
+    background: #0a0a0a;
+    color: #e3272b;
+    border: 1px solid #e3272b;
 }

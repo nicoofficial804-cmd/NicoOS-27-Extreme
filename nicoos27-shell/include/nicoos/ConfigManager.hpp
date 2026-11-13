@@ -33,6 +33,10 @@ public:
     double uiScale() const { return m_uiScale; }
     int panelHeight() const { return m_panelHeight; }
     bool workspaceWrapAround() const { return m_workspaceWrapAround; }
+    // [behavior] workspace_count: quante aree di lavoro la shell tiene sempre
+    // presenti (1..N), anche quando sono vuote. Sono aree reali di Hyprland:
+    // vengono create al primo uso.
+    int workspaceCount() const { return m_workspaceCount; }
     QString iconTheme() const { return m_iconTheme; }
     QString wallpaperPath() const { return m_wallpaperPath; }
     QStringList wallpaperDirs() const { return m_wallpaperDirs; }
@@ -63,6 +67,7 @@ private:
     double m_uiScale{1.0};
     int m_panelHeight{34};
     bool m_workspaceWrapAround{true};
+    int m_workspaceCount{10};
     QString m_iconTheme;
     QString m_wallpaperPath;
     QStringList m_wallpaperDirs;

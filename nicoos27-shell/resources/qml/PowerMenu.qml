@@ -7,7 +7,7 @@ import QtQuick.Layouts
 Rectangle {
     id: root
     anchors.fill: parent
-    color: Qt.rgba(0.01, 0.02, 0.04, 0.86)
+    color: Qt.rgba(0.02, 0.02, 0.02, 0.86)
     focus: true
     opacity: 0
 
@@ -73,7 +73,7 @@ Rectangle {
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: "Cosa vuoi fare?"
-            color: "#ffffff"
+            color: "#e3272b"
             font.pixelSize: 26
             font.weight: Font.Light
         }
@@ -94,11 +94,11 @@ Rectangle {
                     radius: 28
                     scale: cardTap.pressed ? 0.94 : ((isSel || cardHover.hovered) ? 1.07 : 1.0)
                     color: isArmed ? Qt.rgba(1, 0.28, 0.28, 0.40)
-                                   : (isSel || cardHover.hovered ? Qt.rgba(1, 1, 1, 0.17) : Qt.rgba(1, 1, 1, 0.07))
+                                   : (isSel || cardHover.hovered ? Qt.rgba(0.89, 0.15, 0.17, 0.17) : Qt.rgba(0.89, 0.15, 0.17, 0.07))
                     border.width: 1
                     border.color: isArmed ? Qt.rgba(1, 0.4, 0.4, 0.9)
                                           : (isSel || cardHover.hovered ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.8)
-                                                                        : Qt.rgba(1, 1, 1, 0.10))
+                                                                        : Qt.rgba(0.89, 0.15, 0.17, 0.10))
 
                     Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                     Behavior on color { ColorAnimation { duration: 140 } }
@@ -115,14 +115,14 @@ Rectangle {
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: card.isArmed ? "Conferma?" : modelData.label
-                            color: "#ffffff"
+                            color: "#e3272b"
                             font.pixelSize: 15
                             font.weight: card.isArmed ? Font.DemiBold : Font.Normal
                         }
                         Text {
                             Layout.alignment: Qt.AlignHCenter
                             text: String(index + 1)
-                            color: Qt.rgba(1, 1, 1, 0.35)
+                            color: Qt.rgba(0.89, 0.15, 0.17, 0.35)
                             font.pixelSize: 11
                         }
                     }
@@ -139,7 +139,7 @@ Rectangle {
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: "Esc per annullare   ·   ← → e Invio, oppure 1–5"
-            color: Qt.rgba(1, 1, 1, 0.4)
+            color: Qt.rgba(0.89, 0.15, 0.17, 0.4)
             font.pixelSize: 12
         }
     }

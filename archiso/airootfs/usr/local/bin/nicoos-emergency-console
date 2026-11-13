@@ -1,0 +1,86 @@
+#!/bin/bash
+# /usr/local/bin/nicoos-emergency-console
+#
+# Eseguito come root da nicoos-emergency-console.service, attivato a sua volta
+# da nicoos-emergency-console.path quando nicoos-session non riesce ad avviare
+# Hyprland (la sessione scrive /run/nicoos/emergency-request.<uid>).
+#
+# Perché serve un processo privilegiato — e perché la Shell di emergenza non
+# poteva semplicemente partire dentro la sessione:
+#
+#   * SDDM mette la VT della sessione in KD_GRAPHICS prima di avviarla
+#     (VirtualTerminal::jumpToVt in sddm 0.21) e, se il compositore non parte,
+#     nessuno la riporta in KD_TEXT: il testo scritto su quella VT non viene
+#     disegnato e resta uno schermo nero;
+#   * SDDM redirige stdout della sessione su /dev/null (stderr va nel log della
+#     sessione Wayland): il messaggio della Shell di emergenza finiva nel vuoto;
+#   * solo root può attivare una VT e cambiarne la modalità.
+#
+# Il risultato, senza questo script, era "il login si blocca": zsh in ascolto
+# su una VT nera. Qui l'utente che ha richiesto il soccorso viene portato su una
+# VT di testo libera (tty1 è di SDDM, tty2 e tty3 hanno i getty di NicoOS) e lì
+# riceve la Shell di emergenza, come se stesso.
+set -u
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+REQ_DIR=/run/nicoos
+EMERGENCY_SHELL=/usr/local/bin/nicoos-emergency-shell
+VT=4
+
+log() { printf '[nicoos-emergency-console] %s\n' "$*" >&2; }
+
+cleanup() { rm -f "$REQ_DIR/console-active" 2>/dev/null || true; }
+trap cleanup EXIT
+trap 'exit 143' TERM INT HUP
+
+# La directory è creata all'avvio da /etc/tmpfiles.d/nicoos.conf. Se manca non
+# può esserci alcuna richiesta.
+[[ -d $REQ_DIR ]] || exit 0
+
+# L'utente è il *proprietario* del file di richiesta: il contenuto non viene
+# mai letto, così nessuno può farsi avviare una shell di un altro account.
+shopt -s nullglob
+requests=("$REQ_DIR"/emergency-request.*)
+shopt -u nullglob
+(( ${#requests[@]} )) || exit 0
+
+uid=""
+for req in "${requests[@]}"; do
+    owner=$(stat -c %u -- "$req" 2>/dev/null) || continue
+    rm -f -- "$req" 2>/dev/null || true
+    if [[ -z $uid && $owner =~ ^[0-9]+$ ]] && (( owner >= 1000 )); then
+        uid=$owner
+    fi
+done
+
+[[ -n $uid ]] || { log "nessuna richiesta valida"; exit 0; }
+user=$(getent passwd "$uid" | cut -d: -f1)
+[[ -n $user ]] || { log "utente con uid $uid sconosciuto"; exit 0; }
+
+command -v openvt >/dev/null 2>&1 || { log "openvt mancante (pacchetto kbd)"; exit 0; }
+
+# Finché questa console è aperta nicoos-session non ne chiede un'altra: senza
+# questo, sulla ISO live (autologin con Relogin=true) un login fallito
+# riaprirebbe la console ogni volta che la sessione esce.
+{ : >"$REQ_DIR/console-active"; } 2>/dev/null || true
+
+# La VT della sessione è in VT_PROCESS finché il processo della sessione esiste:
+# il cambio VT resterebbe in attesa del suo consenso. nicoos-session esce subito
+# dopo aver scritto la richiesta, quindi la si lascia liberare lì. Se il kernel
+# trova ancora il vecchio processo, il tentativo successivo di openvt riporta
+# comunque la VT in VT_AUTO/KD_TEXT (change_console in vt_ioctl.c).
+for _ in $(seq 1 5); do
+    fuser -s /dev/tty1 2>/dev/null || break
+    sleep 0.2
+done
+
+log "avvio della Shell di emergenza per l'utente $user sulla VT $VT"
+openvt -f -c "$VT" -s -w -- \
+    env TERM=linux su -l "$user" -c "$EMERGENCY_SHELL"
+status=$?
+log "console di emergenza terminata (stato $status)"
+
+# Richieste arrivate mentre la console era già aperta non devono riaprirla.
+rm -f "$REQ_DIR"/emergency-request.* 2>/dev/null || true
+exit 0

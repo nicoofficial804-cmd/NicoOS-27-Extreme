@@ -90,6 +90,10 @@ qt6-translations
 qt6-svg
 qt6-wayland
 layer-shell-qt
+# Schermata di avvio grafica (tema nicoos: anello di punti + logo). Va sia
+# nell'initramfs della ISO sia in quello del sistema installato: Calamares
+# aggiunge da solo l'hook `plymouth` quando il pacchetto è presente.
+plymouth
 # Tema del cursore vero: senza questo Xorg (greeter SDDM) e le app Wayland
 # mostrano il cursore predefinito di Xorg, la "X".
 adwaita-cursors

@@ -1,0 +1,618 @@
+# NicoOS 27 Extreme — schermata di avvio (Plymouth, plugin "script").
+#
+# All'avvio il tema riproduce splash.mp4 estratto in splash0.png … splash39.png:
+# 40 fotogrammi a 10 fps, 100 ms esatti ciascuno, 4 s in tutto (la stessa durata
+# del video). Finite le foto compare la schermata statica:
+#
+# Tre elementi in colonna, tutti centrati orizzontalmente:
+#   - in alto il logo del produttore del PC, quello che il firmware mostra
+#     all'accensione (tabella ACPI BGRT),
+#   - al centro l'anello di sei punti in rotazione, lo stesso indicatore di
+#     Windows 11: nessuna barra di avanzamento,
+#   - in basso il logo NicoOS 27 EXTREME (logo.png, copiato dal generatore
+#     tools/make-branding.py).
+# Nell'angolo in basso a sinistra scorre il nome del servizio in avvio, e tutto
+# entra e esce in dissolvenza. Ogni misura è una frazione della finestra: la
+# stessa animazione va bene da 1024x768 a 4K, senza asset da rigenerare.
+#
+# Tempi: Plymouth non espone un orologio agli script (le funzioni disponibili
+# sono Window, Sprite, Image, Math e Plymouth.Set*/GetMode), quindi l'unico
+# pacing possibile è il timer del plugin. `on_timeout` riarma il timer con
+# 1/refresh_rate PRIMA di eseguire il callback, e refresh_rate si cambia a
+# runtime con Plymouth.SetRefreshRate: a 10 Hz ogni tick vale 100 ms e ogni
+# tick mostra un fotogramma, con il lavoro del callback che non si somma
+# all'intervallo (finché resta sotto i 100 ms). Il timer non può garantire che
+# il compositore disegni davvero ogni 100 ms: kernel, GPU e virtualizzazione
+# possono ritardare la presentazione. Il tema garantisce il *momento in cui
+# chiede* il fotogramma successivo, non il momento in cui compare sullo schermo.
+
+# Sfondo nero: i colori primari di NicoOS sono il rosso del logo e il nero.
+# I punti dell'anello e i testi sono rossi (dot.png), così restano visibili
+# sul fondo nero.
+Window.SetBackgroundTopColor (0.02, 0.02, 0.02);
+Window.SetBackgroundBottomColor (0.05, 0.05, 0.05);
+
+DOTS = 6;
+ORBIT_IN_DOTS = 2.6;
+REVOLUTION_SECONDS = 1.4;
+FADE_IN_SECONDS = 1;
+FADE_OUT_SECONDS = 0.35;
+MAX_BULLETS = 32;
+
+# Cadenza del video: 10 fotogrammi al secondo, 100 ms esatti per fotogramma.
+# Mentre il video gira non si fa altro che avanzare di un fotogramma: niente
+# trigonometria, niente dissolvenze, niente ridimensionamenti se la finestra
+# non cambia.
+VIDEO_FPS = 10;
+# Dopo il video l'anello ruota e le dissolvenze sfumano: 50 Hz, il valore
+# predefinito del plugin. A 10 Hz sarebbero a scatti.
+RING_FPS = 50;
+
+# Fotogrammi estratti da tools/make-branding.py a 10 fps e con larghezza
+# massima 1280 px: 40 immagini, cioè 40 × 0,1 s = 4 s, la durata del video.
+# Se cambia il video vanno aggiornati questo numero e VIDEO_SECONDS in
+# /usr/local/bin/nicoos-plymouth-fade-out; il generatore avvisa se non
+# coincidono.
+VIDEO_FRAMES = 40;
+VIDEO_FRAME_SECONDS = 1 / VIDEO_FPS;
+
+# Plymouth chiude la splash nello stesso istante in cui riceve `quit`, quindi
+# il tema non farebbe in tempo a spegnersi. nicoos-plymouth-fade-out manda
+# prima questo stato e aspetta: qui diventa il via alla dissolvenza.
+FADE_SIGNAL = "__nicoos_fade__";
+
+# Logo del produttore: il firmware lo espone come BMP sotto sysfs. Image()
+# cerca però solo dentro ImageDir, quindi il percorso si scrive relativo alla
+# cartella del tema (cinque ".." riportano alla radice). Se il firmware non
+# pubblica BGRT — succede con il BIOS legacy e su molte schede virtuali — il
+# file non c'è, Image() restituisce null e il logo in alto non compare.
+OEM_LOGO = "../../../../../sys/firmware/acpi/bgrt/image";
+
+# Frequenza attualmente richiesta a Plymouth. Cambia a runtime: 10 Hz durante
+# il video, RING_FPS dopo. Le durate di dissolvenza e rotazione si calcolano su
+# questo valore, così restano corrette dopo il cambio.
+refresh.rate = VIDEO_FPS;
+
+layout.phase = 0;
+layout.width = 0;
+layout.height = 0;
+layout.dot = 6;
+layout.radius = 10;
+layout.center_x = 0;
+layout.center_y = 0;
+
+fade.alpha = 0;
+fade.quitting = 0;
+fade.dirty = 0;
+
+status.text = "";
+status.dirty = 0;
+status.visible = 0;
+status.has_image = 0;
+
+password.visible = 0;
+password.bullets = 0;
+password.prompt = "";
+
+video.playing = 1;
+video.done = 0;
+video.rate_switched = 0;
+video.frames = 0;
+video.frame_index = 0;
+video.opacity = 1;
+video.last_frame = -1;
+video.last_width = 0;
+video.last_height = 0;
+
+dot_source = Image ("dot.png");
+logo.source = Image ("logo.png");
+oem.source = Image (OEM_LOGO);
+
+# Fotogrammi di splash.mp4, caricati tutti adesso: durante l'animazione non si
+# tocca il disco. Image() decodifica al primo disegno, quindi la decodifica
+# avviene qui, prima che parta il timer, e non dentro il callback.
+# A 1280x720 sono 40 immagini da 3,7 MB in ARGB32 (circa 147 MB in RAM): il
+# motivo per cui i fotogrammi non sono più a 1920x1080.
+# Si tiene solo ciò che Image() riesce davvero a caricare: se il video cambia
+# lunghezza il tema riproduce i fotogrammi presenti invece di disegnare
+# un'immagine nulla.
+splash_frames = [];
+splash.loaded = 0;
+for (i = 0; i < VIDEO_FRAMES; i++)
+  {
+    frame_image = Image ("splash" + i + ".png");
+    if (frame_image)
+      {
+        splash_frames[splash.loaded] = frame_image;
+        splash.loaded = splash.loaded + 1;
+      }
+  }
+video.frames = splash.loaded;
+if (video.frames == 0)
+  {
+    # Nessun fotogramma: si salta la fase video e resta l'anello.
+    video.done = 1;
+    video.playing = 0;
+  }
+
+oem.sprite = Sprite ();
+oem.sprite.SetZ (10);
+oem.sprite.SetOpacity (0);
+
+# La sprite del video sta in (0,0) e non si muove: posizione impostata una
+# volta sola, non a ogni fotogramma.
+video.sprite = Sprite ();
+video.sprite.SetZ (5);
+video.sprite.SetOpacity (1);
+video.sprite.SetX (0);
+video.sprite.SetY (0);
+
+logo.sprite = Sprite ();
+logo.sprite.SetZ (10);
+logo.sprite.SetOpacity (0);
+
+for (i = 0; i < DOTS; i++)
+  {
+    dots[i].sprite = Sprite ();
+    dots[i].sprite.SetZ (20);
+    dots[i].sprite.SetOpacity (0);
+  }
+
+status.sprite = Sprite ();
+status.sprite.SetZ (40);
+status.sprite.SetOpacity (0);
+
+password.text = Sprite ();
+password.text.SetZ (30);
+password.text.SetOpacity (0);
+
+for (i = 0; i < MAX_BULLETS; i++)
+  {
+    password.dot[i].sprite = Sprite ();
+    password.dot[i].sprite.SetZ (30);
+    password.dot[i].sprite.SetOpacity (0);
+  }
+
+# Dispone i tre elementi per la risoluzione corrente: viene richiamata solo
+# quando la finestra cambia dimensione, non a ogni fotogramma. Le immagini
+# scalate (logo, punti, logo OEM) si creano qui una volta sola: a ogni tick
+# l'anello riusa layout.dot_image.
+fun layout_update ()
+  {
+    local.width = Window.GetWidth ();
+    local.height = Window.GetHeight ();
+    local.center_x = local.width / 2;
+    local.center_y = local.height / 2;
+
+    # Anello: punti proporzionati all'altezza, così non diventa una palla su
+    # 1024x768 né una polvere su 4K. Resta al centro esatto dello schermo.
+    local.dot = Math.Clamp (local.height * 0.008, 4, 16);
+    local.radius = local.dot * ORBIT_IN_DOTS;
+    local.gap = local.height * 0.055;
+
+    layout.width = local.width;
+    layout.height = local.height;
+    layout.dot = local.dot;
+    layout.radius = local.radius;
+    layout.center_x = local.center_x;
+    layout.center_y = local.center_y;
+
+    # Logo NicoOS: poco meno di un quarto della larghezza, appena sotto
+    # l'anello.
+    local.mark_width = Math.Clamp (local.width * 0.24, 180, 560);
+    local.mark_ratio = logo.source.GetHeight () / logo.source.GetWidth ();
+    local.mark_height = Math.Int (local.mark_width * local.mark_ratio + 0.5);
+
+    layout.dot_image = dot_source.Scale (local.dot, local.dot);
+    layout.mark_image = logo.source.Scale (local.mark_width, local.mark_height);
+
+    logo.sprite.SetImage (layout.mark_image);
+    logo.sprite.SetX (Math.Int (local.center_x - local.mark_width / 2));
+    logo.sprite.SetY (Math.Int (local.center_y + local.radius + local.dot / 2 + local.gap));
+
+    for (i = 0; i < DOTS; i++)
+      {
+        dots[i].sprite.SetImage (layout.dot_image);
+      }
+
+    # Logo del produttore, sopra l'anello: sta in un riquadro massimo e ne
+    # conserva le proporzioni.
+    if (oem.source)
+      {
+        local.max_width = Math.Clamp (local.width * 0.22, 120, 420);
+        local.max_height = local.height * 0.12;
+        local.natural_width = oem.source.GetWidth ();
+        local.natural_height = oem.source.GetHeight ();
+        local.scale_width = local.max_width / local.natural_width;
+        local.scale_height = local.max_height / local.natural_height;
+        if (local.scale_height < local.scale_width)
+          {
+            local.oem_width = Math.Int (local.natural_width * local.scale_height);
+            local.oem_height = Math.Int (local.natural_height * local.scale_height);
+            layout.oem_image = oem.source.Scale (local.oem_width, local.oem_height);
+            oem.sprite.SetImage (layout.oem_image);
+            oem.sprite.SetX (Math.Int (local.center_x - local.oem_width / 2));
+            oem.sprite.SetY (Math.Int (local.center_y - local.radius - local.dot / 2 - local.gap - local.oem_height));
+          }
+        else
+          {
+            local.oem_width = Math.Int (local.natural_width * local.scale_width);
+            local.oem_height = Math.Int (local.natural_height * local.scale_width);
+            layout.oem_image = oem.source.Scale (local.oem_width, local.oem_height);
+            oem.sprite.SetImage (layout.oem_image);
+            oem.sprite.SetX (Math.Int (local.center_x - local.oem_width / 2));
+            oem.sprite.SetY (Math.Int (local.center_y - local.radius - local.dot / 2 - local.gap - local.oem_height));
+          }
+      }
+
+    status_place ();
+
+    if (password.visible == 1)
+      {
+        password_draw ();
+      }
+
+    # Le immagini sono nuove: l'opacità va riapplicata una volta.
+    fade.dirty = 1;
+  }
+
+# Riga di stato: la disegna solo quando arriva un messaggio nuovo, non a ogni
+# fotogramma.
+fun status_draw ()
+  {
+    status.dirty = 0;
+
+    if (status.text)
+      {
+        local.image = Image.Text (status.text, 0.89, 0.15, 0.17);
+        if (local.image)
+          {
+            status.text_image = local.image;
+            status.has_image = 1;
+            status.visible = 1;
+            status.sprite.SetImage (status.text_image);
+            status_place ();
+          }
+        else
+          {
+            status.has_image = 0;
+            status.visible = 0;
+            status.sprite.SetOpacity (0);
+          }
+      }
+    else
+      {
+        status.has_image = 0;
+        status.visible = 0;
+        status.sprite.SetOpacity (0);
+      }
+
+    # Visibilità cambiata: l'opacità va riapplicata una volta.
+    fade.dirty = 1;
+  }
+
+fun status_place ()
+  {
+    if (status.has_image == 1)
+      {
+        local.x = Math.Clamp (Window.GetWidth () * 0.035, 12, 72);
+        local.y = Window.GetHeight () - Math.Clamp (Window.GetHeight () * 0.05, 10, 64) - status.text_image.GetHeight ();
+        status.sprite.SetX (Math.Int (local.x));
+        status.sprite.SetY (Math.Int (local.y));
+      }
+  }
+
+fun update_status_callback (text)
+  {
+    if (text == FADE_SIGNAL)
+      {
+        fade.quitting = 1;
+      }
+    else
+      {
+        if (text)
+          {
+            status.text = text;
+          }
+        status.dirty = 1;
+      }
+  }
+
+# Disegna un fotogramma del video. L'immagine si ridimensiona alla finestra una
+# volta per fotogramma, ma solo se serve: se il PNG ha già la misura dello
+# schermo si passa la sprite direttamente, senza Scale() e senza allocare un
+# buffer a piena schermata. Se cambia solo il fotogramma, il ridimensionamento
+# usa la stessa dimensione già nota.
+fun video_draw (index)
+  {
+    local.width = Window.GetWidth ();
+    local.height = Window.GetHeight ();
+    local.frame = splash_frames[index];
+
+    if (video.last_frame != index || video.last_width != local.width || video.last_height != local.height)
+      {
+        if (local.frame.GetWidth () == local.width && local.frame.GetHeight () == local.height)
+          {
+            video.sprite.SetImage (local.frame);
+          }
+        else
+          {
+            video.sprite.SetImage (local.frame.Scale (local.width, local.height));
+          }
+
+        video.last_frame = index;
+        video.last_width = local.width;
+        video.last_height = local.height;
+      }
+  }
+
+# L'opacità della sprite si tocca solo quando cambia davvero.
+fun video_set_opacity (value)
+  {
+    if (video.opacity != value)
+      {
+        video.opacity = value;
+        video.sprite.SetOpacity (value);
+      }
+  }
+
+# Un tick con il video in corso: esattamente un fotogramma, 100 ms. Quando
+# finiscono i fotogrammi si passa all'anello; il fotogramma appena disegnato
+# resta a schermo per il suo intero tick.
+fun video_advance ()
+  {
+    if (video.frame_index < video.frames)
+      {
+        video_draw (video.frame_index);
+        video.frame_index = video.frame_index + 1;
+      }
+
+    if (video.frame_index >= video.frames)
+      {
+        video.done = 1;
+        video.playing = 0;
+        if (fade.quitting == 1)
+          {
+            fade.alpha = 1;
+          }
+        video_enter_ring ();
+      }
+  }
+
+# Fine del video: anello e dissolvenze tornano a RING_FPS. Il cambio di
+# frequenza è supportato dal plugin, che rilegge refresh_rate a ogni riarmo del
+# timer, quindi ha effetto dal tick successivo.
+fun video_enter_ring ()
+  {
+    if (video.rate_switched == 0)
+      {
+        video.rate_switched = 1;
+        refresh.rate = RING_FPS;
+        Plymouth.SetRefreshRate (refresh.rate);
+      }
+
+    if (fade.quitting == 0)
+      {
+        video_set_opacity (0);
+      }
+
+    fade.dirty = 1;
+  }
+
+# Anello: la fase avanza di un giro ogni REVOLUTION_SECONDS, calcolata sulla
+# frequenza corrente. Non si aggiorna mentre l'anello è invisibile (durante il
+# video) né quando è già dissolto.
+fun ring_update ()
+  {
+    if (fade.alpha > 0)
+      {
+        layout.phase = layout.phase + 2 * Math.Pi / (REVOLUTION_SECONDS * refresh.rate);
+        if (layout.phase > 2 * Math.Pi)
+          {
+            layout.phase = layout.phase - 2 * Math.Pi;
+          }
+
+        for (i = 0; i < DOTS; i++)
+          {
+            angle = layout.phase + i * 2 * Math.Pi / DOTS;
+            dots[i].sprite.SetX (Math.Int (layout.center_x + Math.Cos (angle) * layout.radius - layout.dot / 2));
+            dots[i].sprite.SetY (Math.Int (layout.center_y + Math.Sin (angle) * layout.radius - layout.dot / 2));
+          }
+      }
+  }
+
+# Dissolvenza dell'anello. Segna `fade.dirty` solo quando il valore cambia,
+# così a opacità stabile non si tocca nessuna sprite.
+fun fade_update ()
+  {
+    if (fade.quitting == 1)
+      {
+        if (fade.alpha > 0)
+          {
+            fade.alpha = fade.alpha - 1 / (FADE_OUT_SECONDS * refresh.rate);
+            if (fade.alpha < 0)
+              {
+                fade.alpha = 0;
+              }
+            fade.dirty = 1;
+          }
+      }
+    else if (fade.alpha < 1)
+      {
+        fade.alpha = fade.alpha + 1 / (FADE_IN_SECONDS * refresh.rate);
+        if (fade.alpha > 1)
+          {
+            fade.alpha = 1;
+          }
+        fade.dirty = 1;
+      }
+  }
+
+# Dissolvenza applicata a tutto ciò che è visibile: un solo punto in cui si
+# decide l'opacità. Viene chiamata solo quando qualcosa è cambiato.
+fun apply_opacity ()
+  {
+    if (video.done == 1)
+      {
+        if (fade.quitting == 1)
+          {
+            video_set_opacity (fade.alpha);
+          }
+        else
+          {
+            video_set_opacity (0);
+          }
+      }
+
+    for (i = 0; i < DOTS; i++)
+      {
+        dots[i].sprite.SetOpacity (fade.alpha);
+      }
+
+    logo.sprite.SetOpacity (fade.alpha);
+
+    if (oem.source)
+      {
+        oem.sprite.SetOpacity (fade.alpha);
+      }
+
+    if (status.visible == 1)
+      {
+        status.sprite.SetOpacity (fade.alpha * 0.8);
+      }
+
+    if (password.visible == 1)
+      {
+        password.text.SetOpacity (fade.alpha);
+        for (i = 0; i < MAX_BULLETS; i++)
+          {
+            if (i < password.bullets)
+              {
+                password.dot[i].sprite.SetOpacity (fade.alpha);
+              }
+            else
+              {
+                password.dot[i].sprite.SetOpacity (0);
+              }
+          }
+      }
+  }
+
+# Un tick di Plymouth. Durante il video non c'è altro lavoro che un fotogramma:
+# l'anello, le dissolvenze e le opacità non vengono toccati, e la finestra si
+# controlla con due letture (non due funzioni separate per larghezza e altezza).
+fun refresh_callback ()
+  {
+    if (layout.width != Window.GetWidth () || layout.height != Window.GetHeight ())
+      {
+        layout_update ();
+      }
+
+    if (video.done == 0)
+      {
+        video_advance ();
+      }
+    else
+      {
+        ring_update ();
+        fade_update ();
+      }
+
+    if (status.dirty == 1)
+      {
+        status_draw ();
+      }
+
+    if (fade.dirty == 1)
+      {
+        fade.dirty = 0;
+        apply_opacity ();
+      }
+  }
+
+# Richiesta della password (disco cifrato). Senza questa parte, con gli hook
+# udev di mkinitcpio, chi cifra il disco digiterebbe alla cieca: la splash
+# copre la console.
+# Una riga di pallini centrata, uno per carattere digitato, alla quota y.
+fun password_bullets (y)
+  {
+    local.size = Math.Clamp (Window.GetHeight () * 0.009, 5, 18);
+    local.spacing = local.size * 1.9;
+    local.image = dot_source.Scale (local.size, local.size);
+
+    for (i = 0; i < MAX_BULLETS; i++)
+      {
+        if (i < password.bullets)
+          {
+            password.dot[i].sprite.SetImage (local.image);
+            password.dot[i].sprite.SetX (Math.Int (Window.GetWidth () / 2 + (i - (password.bullets - 1) / 2) * local.spacing - local.size / 2));
+            password.dot[i].sprite.SetY (y);
+          }
+      }
+  }
+
+fun password_draw ()
+  {
+    local.text_y = Math.Int (Window.GetHeight () * 0.78);
+
+    password.text_image = Image.Text (password.prompt, 0.89, 0.15, 0.17);
+    if (password.text_image)
+      {
+        password.text.SetImage (password.text_image);
+        password.text.SetX (Math.Int ((Window.GetWidth () - password.text_image.GetWidth ()) / 2));
+        password.text.SetY (local.text_y);
+        password_bullets (local.text_y + password.text_image.GetHeight () + 12);
+      }
+    else
+      {
+        password_bullets (local.text_y);
+      }
+
+    fade.dirty = 1;
+  }
+
+fun display_password_callback (prompt, bullets)
+  {
+    if (bullets > MAX_BULLETS)
+      {
+        bullets = MAX_BULLETS;
+      }
+    password.prompt = prompt;
+    password.bullets = bullets;
+    password.visible = 1;
+    password_draw ();
+  }
+
+fun display_normal_callback ()
+  {
+    password.visible = 0;
+    password.text.SetOpacity (0);
+    for (i = 0; i < MAX_BULLETS; i++)
+      {
+        password.dot[i].sprite.SetOpacity (0);
+      }
+  }
+
+# Plymouth avvisa quando comincia a chiudersi: da lì in poi si spegne tutto in
+# dissolvenza invece di sparire di colpo.
+fun quit_callback ()
+  {
+    fade.quitting = 1;
+  }
+
+# Primo fotogramma subito, prima del primo tick: così non si vede un tick di
+# solo sfondo in attesa del timer. Il primo tick disegna il numero 1.
+if (video.frames > 0)
+  {
+    video_draw (0);
+    video.frame_index = 1;
+  }
+
+# Frequenza iniziale del refresh: 10 Hz, cioè 100 ms per fotogramma. Da questo
+# valore dipende il passo del video; dopo il video il tema lo porta a RING_FPS.
+Plymouth.SetRefreshRate (refresh.rate);
+Plymouth.SetDisplayNormalFunction (display_normal_callback);
+Plymouth.SetDisplayPasswordFunction (display_password_callback);
+Plymouth.SetUpdateStatusFunction (update_status_callback);
+Plymouth.SetQuitFunction (quit_callback);
+Plymouth.SetRefreshFunction (refresh_callback);

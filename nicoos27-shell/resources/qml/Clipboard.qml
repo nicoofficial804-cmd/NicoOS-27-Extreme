@@ -5,8 +5,8 @@ Rectangle {
     id: root
     anchors.fill: parent
     radius: 22
-    color: Qt.rgba(0.04, 0.05, 0.075, 0.95)
-    border.color: Qt.rgba(1, 1, 1, 0.10)
+    color: Qt.rgba(0.02, 0.02, 0.02, 0.95)
+    border.color: Qt.rgba(0.89, 0.15, 0.17, 0.10)
     border.width: 1
     focus: true
     Keys.onEscapePressed: surface.hideSurface()
@@ -30,7 +30,7 @@ Rectangle {
             Layout.fillWidth: true
             Text {
                 text: "Cronologia appunti"
-                color: "#ffffff"
+                color: "#e3272b"
                 font.pixelSize: 18
                 font.weight: Font.DemiBold
                 Layout.fillWidth: true
@@ -40,14 +40,14 @@ Rectangle {
                 Layout.preferredHeight: 30
                 Layout.preferredWidth: wipeRow.implicitWidth + 20
                 radius: 15
-                color: wipeTap.pressed ? Qt.rgba(1, 0.3, 0.3, 0.4) : (wipeHover.hovered ? Qt.rgba(1, 0.3, 0.3, 0.25) : Qt.rgba(1, 1, 1, 0.08))
+                color: wipeTap.pressed ? Qt.rgba(1, 0.3, 0.3, 0.4) : (wipeHover.hovered ? Qt.rgba(1, 0.3, 0.3, 0.25) : Qt.rgba(0.89, 0.15, 0.17, 0.08))
                 Behavior on color { ColorAnimation { duration: 120 } }
                 RowLayout {
                     id: wipeRow
                     anchors.centerIn: parent
                     spacing: 6
                     IconGlyph { source: "qrc:/nicoos/icons/trash.svg"; iconSize: 14 }
-                    Text { text: "Svuota"; color: "#ffffff"; font.pixelSize: 12 }
+                    Text { text: "Svuota"; color: "#e3272b"; font.pixelSize: 12 }
                 }
                 HoverHandler { id: wipeHover }
                 TapHandler { id: wipeTap; onTapped: clipboard.wipe() }
@@ -59,9 +59,9 @@ Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 40
             radius: 12
-            color: Qt.rgba(1, 1, 1, 0.07)
+            color: Qt.rgba(0.89, 0.15, 0.17, 0.07)
             border.width: 1
-            border.color: search.activeFocus ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.7) : Qt.rgba(1, 1, 1, 0.08)
+            border.color: search.activeFocus ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.7) : Qt.rgba(0.89, 0.15, 0.17, 0.08)
 
             RowLayout {
                 anchors.fill: parent
@@ -72,7 +72,7 @@ Rectangle {
                 TextInput {
                     id: search
                     Layout.fillWidth: true
-                    color: "#ffffff"
+                    color: "#e3272b"
                     font.pixelSize: 14
                     verticalAlignment: TextInput.AlignVCenter
                     onTextChanged: clipboard.filterText = text
@@ -82,7 +82,7 @@ Rectangle {
                         visible: search.text.length === 0
                         anchors.verticalCenter: parent.verticalCenter
                         text: "Cerca negli appunti…"
-                        color: Qt.rgba(1, 1, 1, 0.4)
+                        color: Qt.rgba(0.89, 0.15, 0.17, 0.4)
                         font.pixelSize: 14
                     }
                 }
@@ -110,8 +110,8 @@ Rectangle {
                 width: ListView.view.width
                 height: 44
                 radius: 11
-                color: rowTap.pressed ? Qt.rgba(1, 1, 1, 0.18)
-                                      : (rowHover.hovered || ListView.isCurrentItem ? Qt.rgba(1, 1, 1, 0.10) : Qt.rgba(1, 1, 1, 0.04))
+                color: rowTap.pressed ? Qt.rgba(0.89, 0.15, 0.17, 0.18)
+                                      : (rowHover.hovered || ListView.isCurrentItem ? Qt.rgba(0.89, 0.15, 0.17, 0.10) : Qt.rgba(0.89, 0.15, 0.17, 0.04))
                 Behavior on color { ColorAnimation { duration: 110 } }
 
                 RowLayout {
@@ -127,7 +127,7 @@ Rectangle {
                     Text {
                         Layout.fillWidth: true
                         text: clipText
-                        color: "#ffffff"
+                        color: "#e3272b"
                         font.pixelSize: 13
                         elide: Text.ElideRight
                         maximumLineCount: 1
@@ -154,7 +154,7 @@ Rectangle {
                 visible: list.count === 0
                 anchors.centerIn: parent
                 text: "Nessun elemento copiato"
-                color: Qt.rgba(1, 1, 1, 0.45)
+                color: Qt.rgba(0.89, 0.15, 0.17, 0.45)
                 font.pixelSize: 13
             }
         }

@@ -38,15 +38,15 @@ Rectangle {
     // ---- Sfondo "vetro" ---------------------------------------------
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0.05, 0.07, 0.10, panelOpacity)
-        border.color: Qt.rgba(1, 1, 1, 0.08)
+        color: Qt.rgba(0.02, 0.02, 0.02, panelOpacity)
+        border.color: Qt.rgba(0.89, 0.15, 0.17, 0.08)
         border.width: 1
 
         Rectangle {
             anchors.fill: parent
             gradient: Gradient {
                 orientation: Gradient.Vertical
-                GradientStop { position: 0.0; color: Qt.rgba(1, 1, 1, 0.05) }
+                GradientStop { position: 0.0; color: Qt.rgba(0.89, 0.15, 0.17, 0.05) }
                 GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.08) }
             }
         }
@@ -64,8 +64,8 @@ Rectangle {
             Layout.preferredHeight: root.barH - 10
             Layout.preferredWidth: startRow.implicitWidth + 20
             radius: 10
-            color: startTap.pressed ? Qt.rgba(1, 1, 1, 0.20)
-                                    : (startHover.hovered ? Qt.rgba(1, 1, 1, 0.12) : Qt.rgba(1, 1, 1, 0.05))
+            color: startTap.pressed ? Qt.rgba(0.89, 0.15, 0.17, 0.20)
+                                    : (startHover.hovered ? Qt.rgba(0.89, 0.15, 0.17, 0.12) : Qt.rgba(0.89, 0.15, 0.17, 0.05))
             scale: startTap.pressed ? 0.95 : 1.0
             Behavior on color { ColorAnimation { duration: 130 } }
             Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
@@ -83,7 +83,7 @@ Rectangle {
                 }
                 Text {
                     text: "NicoOS"
-                    color: "#ffffff"
+                    color: "#e3272b"
                     font.pixelSize: 13
                     font.weight: Font.DemiBold
                 }
@@ -97,7 +97,7 @@ Rectangle {
             Layout.preferredHeight: 24
             Layout.preferredWidth: wsRow.implicitWidth + 16
             radius: 12
-            color: Qt.rgba(1, 1, 1, 0.06)
+            color: Qt.rgba(0.89, 0.15, 0.17, 0.06)
 
             // Scorri sopra i puntini per spostarti tra i workspace.
             WheelHandler {
@@ -125,7 +125,7 @@ Rectangle {
                             width: isActive ? 20 : 8
                             height: 8
                             radius: 4
-                            color: isActive ? accentColor : Qt.rgba(1, 1, 1, windowCount > 0 ? 0.6 : 0.25)
+                            color: isActive ? accentColor : Qt.rgba(0.89, 0.15, 0.17, windowCount > 0 ? 0.6 : 0.25)
                             Behavior on width { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
                             Behavior on color { ColorAnimation { duration: 160 } }
                         }
@@ -138,7 +138,7 @@ Rectangle {
         Rectangle {
             Layout.preferredWidth: 1
             Layout.preferredHeight: root.barH - 18
-            color: Qt.rgba(1, 1, 1, 0.12)
+            color: Qt.rgba(0.89, 0.15, 0.17, 0.12)
         }
 
         // ---- Elenco finestre (barra delle applicazioni in stile Windows) ----
@@ -185,10 +185,10 @@ Rectangle {
                     radius: 9
                     opacity: winMinimized ? 0.5 : 1.0
                     scale: btnTap.pressed ? 0.96 : 1.0
-                    color: winActive ? Qt.rgba(1, 1, 1, 0.17)
-                                     : (btnHover.hovered ? Qt.rgba(1, 1, 1, 0.10) : "transparent")
+                    color: winActive ? Qt.rgba(0.89, 0.15, 0.17, 0.17)
+                                     : (btnHover.hovered ? Qt.rgba(0.89, 0.15, 0.17, 0.10) : "transparent")
                     border.width: winActive ? 1 : 0
-                    border.color: Qt.rgba(1, 1, 1, 0.20)
+                    border.color: Qt.rgba(0.89, 0.15, 0.17, 0.20)
 
                     Behavior on color { ColorAnimation { duration: 140 } }
                     Behavior on opacity { NumberAnimation { duration: 180 } }
@@ -225,7 +225,7 @@ Rectangle {
                             visible: taskList.btnWidth > 100
                             Layout.fillWidth: true
                             text: winTitle.length > 0 ? winTitle : winClass
-                            color: "#ffffff"
+                            color: "#e3272b"
                             font.pixelSize: 12
                             elide: Text.ElideRight
                         }
@@ -293,8 +293,8 @@ Rectangle {
             Layout.preferredHeight: 26
             Layout.preferredWidth: statusRow.implicitWidth + 18
             radius: 9
-            color: statusTap.pressed ? Qt.rgba(1, 1, 1, 0.18)
-                                     : (statusHover.hovered ? Qt.rgba(1, 1, 1, 0.10) : "transparent")
+            color: statusTap.pressed ? Qt.rgba(0.89, 0.15, 0.17, 0.18)
+                                     : (statusHover.hovered ? Qt.rgba(0.89, 0.15, 0.17, 0.10) : "transparent")
             Behavior on color { ColorAnimation { duration: 130 } }
 
             RowLayout {
@@ -324,12 +324,12 @@ Rectangle {
                     IconGlyph {
                         source: sysMonitor.batteryCharging ? "qrc:/nicoos/icons/battery-charging.svg"
                                                            : "qrc:/nicoos/icons/battery.svg"
-                        tint: (sysMonitor.batteryPercent < 20 && !sysMonitor.batteryCharging) ? "#ff6b6b" : "#ffffff"
+                        tint: (sysMonitor.batteryPercent < 20 && !sysMonitor.batteryCharging) ? "#ff6b6b" : "#e3272b"
                         iconSize: root.iconPx - 2
                     }
                     Text {
                         text: sysMonitor.batteryPercent + "%"
-                        color: (sysMonitor.batteryPercent < 20 && !sysMonitor.batteryCharging) ? "#ff6b6b" : "#ffffff"
+                        color: (sysMonitor.batteryPercent < 20 && !sysMonitor.batteryCharging) ? "#ff6b6b" : "#e3272b"
                         font.pixelSize: 12
                     }
                 }
@@ -337,12 +337,12 @@ Rectangle {
                     spacing: 4
                     IconGlyph {
                         source: "qrc:/nicoos/icons/cpu.svg"
-                        tint: sysMonitor.cpuUsagePercent > 85 ? "#ff6b6b" : "#ffffff"
+                        tint: sysMonitor.cpuUsagePercent > 85 ? "#ff6b6b" : "#e3272b"
                         iconSize: root.iconPx - 3
                     }
                     Text {
                         text: sysMonitor.cpuUsagePercent.toFixed(0) + "%"
-                        color: sysMonitor.cpuUsagePercent > 85 ? "#ff6b6b" : "#ffffff"
+                        color: sysMonitor.cpuUsagePercent > 85 ? "#ff6b6b" : "#e3272b"
                         font.pixelSize: 12
                     }
                 }
@@ -350,12 +350,12 @@ Rectangle {
                     spacing: 4
                     IconGlyph {
                         source: "qrc:/nicoos/icons/memory.svg"
-                        tint: sysMonitor.memoryUsagePercent > 90 ? "#ff6b6b" : "#ffffff"
+                        tint: sysMonitor.memoryUsagePercent > 90 ? "#ff6b6b" : "#e3272b"
                         iconSize: root.iconPx - 3
                     }
                     Text {
                         text: sysMonitor.memoryUsagePercent.toFixed(0) + "%"
-                        color: sysMonitor.memoryUsagePercent > 90 ? "#ff6b6b" : "#ffffff"
+                        color: sysMonitor.memoryUsagePercent > 90 ? "#ff6b6b" : "#e3272b"
                         font.pixelSize: 12
                     }
                 }
@@ -378,8 +378,8 @@ Rectangle {
             Layout.preferredHeight: 26
             Layout.preferredWidth: clockCol.implicitWidth + 18
             radius: 9
-            color: clockTap.pressed ? Qt.rgba(1, 1, 1, 0.18)
-                                    : (clockHover.hovered ? Qt.rgba(1, 1, 1, 0.10) : "transparent")
+            color: clockTap.pressed ? Qt.rgba(0.89, 0.15, 0.17, 0.18)
+                                    : (clockHover.hovered ? Qt.rgba(0.89, 0.15, 0.17, 0.10) : "transparent")
             Behavior on color { ColorAnimation { duration: 130 } }
 
             RowLayout {
@@ -388,12 +388,12 @@ Rectangle {
                 spacing: 8
                 Text {
                     text: Qt.formatDateTime(root.now, "ddd d MMM")
-                    color: Qt.rgba(1, 1, 1, 0.7)
+                    color: Qt.rgba(0.89, 0.15, 0.17, 0.7)
                     font.pixelSize: 12
                 }
                 Text {
                     text: Qt.formatDateTime(root.now, clockFormat)
-                    color: "#ffffff"
+                    color: "#e3272b"
                     font.pixelSize: 13
                     font.weight: Font.DemiBold
                 }

@@ -18,10 +18,10 @@ Rectangle {
     scale: tap.pressed ? 0.94 : (hover.hovered && tileEnabled ? 1.03 : 1.0)
 
     color: active ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.30)
-                  : (hover.hovered && tileEnabled ? Qt.rgba(1, 1, 1, 0.11) : Qt.rgba(1, 1, 1, 0.06))
+                  : (hover.hovered && tileEnabled ? Qt.rgba(0.89, 0.15, 0.17, 0.11) : Qt.rgba(0.89, 0.15, 0.17, 0.06))
     border.width: 1
     border.color: active ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.75)
-                         : Qt.rgba(1, 1, 1, 0.09)
+                         : Qt.rgba(0.89, 0.15, 0.17, 0.09)
 
     Behavior on color { ColorAnimation { duration: 140 } }
     Behavior on border.color { ColorAnimation { duration: 140 } }
@@ -39,7 +39,7 @@ Rectangle {
         Text {
             Layout.alignment: Qt.AlignHCenter
             text: tile.label
-            color: "#ffffff"
+            color: "#e3272b"
             font.pixelSize: 11
             font.weight: tile.active ? Font.DemiBold : Font.Normal
         }

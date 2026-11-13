@@ -27,7 +27,7 @@ Item {
             width: ListView.view.width
             height: bodyText.text.length > 0 ? 78 : 54
             radius: 14
-            color: Qt.rgba(0.05, 0.07, 0.09, 0.85)
+            color: Qt.rgba(0.02, 0.02, 0.02, 0.85)
             border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.35)
             border.width: 1
 
@@ -59,7 +59,7 @@ Item {
                     }
                     Text {
                         text: "\u2715"
-                        color: Qt.rgba(1, 1, 1, 0.4)
+                        color: Qt.rgba(0.89, 0.15, 0.17, 0.4)
                         font.pixelSize: 11
                         MouseArea {
                             anchors.fill: parent
@@ -70,7 +70,7 @@ Item {
                 }
                 Text {
                     text: summary
-                    color: "#eaf9ff"
+                    color: "#e3272b"
                     font.pixelSize: 13
                     font.weight: Font.Medium
                     elide: Text.ElideRight
@@ -79,7 +79,7 @@ Item {
                 Text {
                     id: bodyText
                     text: body
-                    color: Qt.rgba(1, 1, 1, 0.55)
+                    color: Qt.rgba(0.89, 0.15, 0.17, 0.55)
                     font.pixelSize: 11
                     wrapMode: Text.WordWrap
                     maximumLineCount: 2

@@ -51,6 +51,8 @@ missing=0
 for f in /usr/bin/Hyprland /usr/bin/sddm /usr/bin/nicoos-shell \
          /usr/bin/foot \
          /usr/local/bin/nicoos-session /usr/local/bin/nicoos-emergency-shell \
+         /usr/local/bin/nicoos-emergency-console \
+         /etc/systemd/system/nicoos-emergency-console.path \
          /usr/share/wayland-sessions/nicoos.desktop \
          /usr/share/sddm/themes/nicoos/Main.qml \
          /usr/share/nicoos-shell/nicoos-shell.lua \

@@ -6,16 +6,44 @@
 # Wayland, niente Qt, niente Hyprland.
 #
 # È raggiungibile in tre modi:
-#   1. automaticamente, da nicoos-session (login SDDM / autologin live),
+#   1. automaticamente: nicoos-session chiede a nicoos-emergency-console.path
+#      di aprirla su una VT di testo (tty4) quando Hyprland manca o non parte,
 #   2. manualmente:  sudo nicoos-emergency-shell
 #   3. da qualsiasi TTY dopo un avvio grafico fallito (Ctrl+Alt+F2).
 set -u
 
-# Serve un vero terminale; senza, non possiamo fare nulla. La redirezione
-# viene eseguita in una subshell così che una rifiutata (/dev/tty0 richiede
-# root quando siamo stati avviati dal display manager) resti silenziosa.
-if [ ! -t 0 ] && [ ! -t 1 ]; then
-    { exec </dev/tty0 >/dev/tty0 2>&1; } 2>/dev/null || true
+# La shell deve scrivere su un terminale *visibile*. SDDM avvia una sessione
+# Wayland con la VT collegata solo a stdin: stdout è /dev/null e stderr finisce
+# in ~/.local/share/sddm/wayland-session.log (UserSession.cpp, sddm 0.21). Il
+# messaggio sarebbe quindi invisibile e zsh resterebbe in attesa su una VT che
+# nessuno vede: il login sembrerebbe bloccato.
+#
+# /dev/tty è il terminale di controllo della sessione ed è sempre 0666, quindi
+# si può riaprire anche come utente normale; /dev/tty0 resta come ripiego per
+# root. Le redirezioni sono provate in una subshell così che una rifiutata non
+# stampi nulla.
+attach_terminal() {
+    if [ -r /dev/tty ] && [ -w /dev/tty ] && { : </dev/tty >/dev/tty; } 2>/dev/null; then
+        exec </dev/tty >/dev/tty 2>&1
+        return 0
+    fi
+    if [ -t 0 ] || [ -t 1 ] || [ -t 2 ]; then
+        return 0
+    fi
+    if [ -r /dev/tty0 ] && [ -w /dev/tty0 ] && { : </dev/tty0 >/dev/tty0; } 2>/dev/null; then
+        exec </dev/tty0 >/dev/tty0 2>&1
+        return 0
+    fi
+    return 1
+}
+attach_terminal || true
+
+# Su una VT la definizione di terminale corretta è "linux"; zsh ne ha bisogno
+# per il prompt e per le sequenze di escape di questa shell.
+if [ -z "${TERM:-}" ] || [ "$TERM" = dumb ]; then
+    case "$(tty 2>/dev/null || true)" in
+        /dev/tty[0-9]*|/dev/console) export TERM=linux ;;
+    esac
 fi
 
 # Rendi la console usabile e leggibile, qualunque sia lo stato del VT.
@@ -75,6 +103,16 @@ Altrimenti, potrebbe essere la fine per te.
 
 Non me ne frega niente, arrangiati.
 NICOOS_EMERGENCY
+
+# Il motivo concreto registrato da nicoos-session: senza, l'utente non sa se
+# manca il pacchetto o se il compositore è andato in crash.
+REASON_FILE="${HOME:-/tmp}/.cache/nicoos/last-failure"
+if [ -r "$REASON_FILE" ]; then
+    echo
+    echo "Motivo registrato da nicoos-session:"
+    head -n 1 "$REASON_FILE" 2>/dev/null | sed 's/^/  /'
+    echo
+fi
 
 echo
 echo "-------------------------------------------------------------------------"

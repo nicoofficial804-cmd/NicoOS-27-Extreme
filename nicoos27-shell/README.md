@@ -39,6 +39,7 @@ nicoos27-shell/
 
 | | |
 |---|---|
+| **Aree di lavoro** | Le aree 1..N (`[behavior] workspace_count`, default 10) restano sempre presenti nel pannello e nella panoramica anche quando sono vuote — Hyprland distrugge un'area vuota appena la si lascia. Non sono segnaposto: il cambio area, il clic sul puntino e il trascinamento di una finestra creano l'area in Hyprland al primo uso, e ogni area mostra le proprie finestre e il proprio stato attivo. |
 | **Lista finestre** | Pulsanti in stile Windows nella barra: icona + titolo, clic per dare il focus, clic su quella attiva per minimizzare, clic su una attenuata per ripristinare, clic centrale o × per chiudere. Animazioni fluide in aggiunta e rimozione. Imposta `[panel] position=bottom` per una vera barra delle applicazioni. |
 | **Blocco** | Avvia `hyprlock` con una configurazione generata dalla shell (`~/.config/nicoos/hyprlock.conf`: sfondo corrente sfocato, pannello in vetro, orologio, campo password nel colore d'accento), con ripiego su `swaylock`/`gtklock`. Se il blocco va in crash (ad esempio con una password errata) viene riavviato automaticamente. Log: `~/.cache/nicoos/lock.log`. `SUPER+L` |
 | **Menu alimentazione** | `SUPER+X`: sospendi (blocca prima), blocca, esci (uwsm → `exit` di Hyprland → `hyprctl` → `loginctl` → `pkill`, salendo di livello solo se Hyprland è ancora vivo), riavvia, spegni. Esci/riavvia/spegni chiedono un secondo clic. Tasti: frecce + Invio, oppure 1-5. |
@@ -278,7 +279,7 @@ senza riavvio:
 
 ```ini
 [appearance]
-accent_color=#00d9ff
+accent_color=#e3272b
 panel_opacity=0.72
 ui_scale=1.0
 

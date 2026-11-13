@@ -51,9 +51,76 @@ global_log() {
     append_line "$USER_LOG" "$line" || printf '%s\n' "$line" >&2
 }
 
+# --- Shell di emergenza ------------------------------------------------------
+# La VT di questa sessione non può ospitare una shell interattiva: SDDM la
+# lascia in KD_GRAPHICS (VirtualTerminal::jumpToVt) e redirige stdout della
+# sessione su /dev/null (UserSession.cpp), quindi una shell avviata qui resta
+# su uno schermo nero e sembra un blocco del login. Serve un processo
+# privilegiato che apra una VT di testo: lo fa nicoos-emergency-console.service,
+# attivato dal file scritto qui sotto. Se la richiesta non è possibile (servizio
+# assente) si ripiega sulla shell in questa sessione: la VT torna in KD_TEXT al
+# primo cambio VT, quindi Ctrl+Alt+F1 la rende visibile.
+request_emergency_console() {
+    local req="/run/nicoos/emergency-request.$(id -u)"
+    # Una console è già aperta: non serve una seconda richiesta, fail() si
+    # limita ad aspettare che quella si chiuda.
+    [ -e /run/nicoos/console-active ] && return 0
+    [ -d /run/nicoos ] && [ -w /run/nicoos ] || return 1
+    { : >"$req"; } 2>/dev/null || return 1
+    return 0
+}
+
+# "Hyprland non è installato" e "Hyprland è andato in crash" richiedono azioni
+# diverse: il motivo va scritto dove la Shell di emergenza può leggerlo.
+# ~/.cache è visibile sia alla sessione sia alla console aperta dal servizio di
+# root (che gira come lo stesso utente), a differenza di /var/log.
+record_failure() {
+    local file="${HOME:-/tmp}/.cache/nicoos/last-failure"
+    mkdir -p "$(dirname "$file")" 2>/dev/null || return 0
+    { printf '%s (%s)\n' "$*" "$(date -Is)"; } >"$file" 2>/dev/null || true
+}
+
 fail() {
     log "ERRORE FATALE: $*"
     global_log "ERRORE FATALE: $*"
+    record_failure "$*"
+
+    if request_emergency_console; then
+        log "console di emergenza richiesta a nicoos-emergency-console.path"
+
+        # Attende che il servizio di root abbia aperto la VT (max 5 s).
+        for _ in $(seq 1 50); do
+            [ -e /run/nicoos/console-active ] && break
+            sleep 0.1
+        done
+
+        if [ -e /run/nicoos/console-active ]; then
+            # La sessione resta viva finché la Shell di emergenza è aperta.
+            # Se uscisse subito, SDDM tornerebbe al greeter e sulla live, dove
+            # l'autologin ha Relogin=true, riavvierebbe subito la sessione:
+            # l'utente perderebbe la shell appena aperta.
+            while [ -e /run/nicoos/console-active ]; do
+                # Se il servizio muore senza poter eseguire il proprio trap (per
+                # esempio con un SIGKILL), il file resterebbe lì e la sessione
+                # aspetterebbe per sempre: il processo della console è la prova
+                # che la shell è davvero ancora aperta.
+                if command -v pgrep >/dev/null 2>&1 && \
+                   ! pgrep -f '/usr/local/bin/nicoos-emergency-console' >/dev/null 2>&1; then
+                    log "la console di emergenza non è più in esecuzione"
+                    break
+                fi
+                sleep 1
+            done
+            log "console di emergenza chiusa: fine della sessione"
+            exit 0
+        fi
+
+        log "la console di emergenza non si è aperta, ripiego sulla sessione"
+    fi
+
+    # Ultimo ripiego: la shell di emergenza su questa VT. Può restare
+    # invisibile se SDDM ha lasciato la VT in KD_GRAPHICS, ma è comunque
+    # raggiungibile con Ctrl+Alt+F1 (primo cambio VT).
     exec /usr/local/bin/nicoos-emergency-shell
 }
 

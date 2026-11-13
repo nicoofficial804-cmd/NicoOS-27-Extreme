@@ -6,7 +6,7 @@ Rectangle {
     id: root
     anchors.fill: parent
     radius: 22
-    color: Qt.rgba(0.03, 0.04, 0.06, 0.93)
+    color: Qt.rgba(0.02, 0.02, 0.02, 0.93)
     border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.35)
     border.width: 1
 
@@ -53,13 +53,13 @@ Rectangle {
                 spacing: 2
                 Text {
                     text: "Multitasking"
-                    color: "#eaf9ff"
+                    color: "#e3272b"
                     font.pixelSize: 22
                     font.weight: Font.DemiBold
                 }
                 Text {
                     text: windowModel.rowCount() + " finestre attive · " + workspaceModel.rowCount() + " aree di lavoro"
-                    color: Qt.rgba(1, 1, 1, 0.45)
+                    color: Qt.rgba(0.89, 0.15, 0.17, 0.45)
                     font.pixelSize: 12
                 }
             }
@@ -70,7 +70,7 @@ Rectangle {
                 Layout.preferredWidth: 340
                 Layout.preferredHeight: 42
                 radius: 12
-                color: Qt.rgba(1, 1, 1, 0.05)
+                color: Qt.rgba(0.89, 0.15, 0.17, 0.05)
                 border.color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, searchInput.activeFocus ? 0.55 : 0.25)
                 border.width: searchInput.activeFocus ? 1.4 : 1
 
@@ -91,14 +91,14 @@ Rectangle {
                     TextInput {
                         id: searchInput
                         Layout.fillWidth: true
-                        color: "#eaf9ff"
+                        color: "#e3272b"
                         font.pixelSize: 13
                         onTextChanged: windowModel.filterText = text
 
                         Text {
                             visible: searchInput.text.length === 0
                             text: "Cerca finestre per titolo o app…"
-                            color: Qt.rgba(1, 1, 1, 0.35)
+                            color: Qt.rgba(0.89, 0.15, 0.17, 0.35)
                             font.pixelSize: 13
                             anchors.verticalCenter: parent.verticalCenter
                         }
@@ -117,7 +117,9 @@ Rectangle {
 
             readonly property int columns: Math.max(1, Math.floor(width / 420))
             cellWidth: width / columns
-            cellHeight: Math.max(260, height / Math.max(1, Math.ceil(workspaceModel.rowCount() / columns)))
+            // Con le aree configurate (default 10) le schede possono essere
+            // molte: lascia che si restringano invece di sfondare la vista.
+            cellHeight: Math.max(170, height / Math.max(1, Math.ceil(workspaceModel.rowCount() / columns)))
 
             model: workspaceModel
 
@@ -132,11 +134,11 @@ Rectangle {
                     radius: 18
                     color: isActive
                            ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.10)
-                           : Qt.rgba(1, 1, 1, 0.035)
+                           : Qt.rgba(0.89, 0.15, 0.17, 0.035)
                     border.color: dropArea.containsDrag
                            ? accentColor
                            : (isActive ? Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.5)
-                                       : Qt.rgba(1, 1, 1, 0.1))
+                                       : Qt.rgba(0.89, 0.15, 0.17, 0.1))
                     border.width: dropArea.containsDrag ? 2.2 : (isActive ? 1.5 : 1)
 
                     Behavior on border.color { ColorAnimation { duration: 120 } }
@@ -164,18 +166,18 @@ Rectangle {
                             Layout.fillWidth: true
                             Rectangle {
                                 width: 9; height: 9; radius: 4.5
-                                color: isActive ? accentColor : Qt.rgba(1, 1, 1, 0.3)
+                                color: isActive ? accentColor : Qt.rgba(0.89, 0.15, 0.17, 0.3)
                             }
                             Text {
                                 text: wsName
-                                color: "#eaf9ff"
+                                color: "#e3272b"
                                 font.pixelSize: 14
                                 font.weight: Font.DemiBold
                                 Layout.fillWidth: true
                             }
                             Text {
                                 text: windowCount
-                                color: Qt.rgba(1, 1, 1, 0.4)
+                                color: Qt.rgba(0.89, 0.15, 0.17, 0.4)
                                 font.pixelSize: 11
                             }
                         }
@@ -223,7 +225,7 @@ Rectangle {
                                 anchors.centerIn: parent
                                 visible: windowCount === 0
                                 text: "Vuoto"
-                                color: Qt.rgba(1, 1, 1, 0.25)
+                                color: Qt.rgba(0.89, 0.15, 0.17, 0.25)
                                 font.pixelSize: 12
                             }
                         }
@@ -247,8 +249,8 @@ Rectangle {
         Rectangle {
             id: thumb
             radius: 10
-            color: Qt.rgba(0.08, 0.1, 0.13, 0.9)
-            border.color: Qt.rgba(1, 1, 1, 0.12)
+            color: Qt.rgba(0.02, 0.02, 0.02, 0.9)
+            border.color: Qt.rgba(0.89, 0.15, 0.17, 0.12)
             border.width: 1
             clip: true
 
@@ -287,7 +289,7 @@ Rectangle {
 
                 Text {
                     text: winTitle.length > 0 ? winTitle : winClass
-                    color: "#eaf9ff"
+                    color: "#e3272b"
                     font.pixelSize: 11
                     elide: Text.ElideRight
                     Layout.fillWidth: true

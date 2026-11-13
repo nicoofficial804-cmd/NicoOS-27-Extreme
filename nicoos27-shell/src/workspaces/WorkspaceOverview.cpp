@@ -9,6 +9,7 @@
 #include <QScreen>
 #include <QGuiApplication>
 #include <QBuffer>
+#include <QSet>
 #include <algorithm>
 
 namespace nicoos {
@@ -56,18 +57,37 @@ void WorkspaceListModel::refresh() {
     const auto active = HyprlandIPC::instance().activeWorkspace();
 
     QVector<WorkspaceRow> fresh;
-    fresh.reserve(workspaces.size());
+    fresh.reserve(workspaces.size() + ConfigManager::instance().workspaceCount());
+    QSet<int> seen;
     for (const auto& ws : workspaces) {
         // I workspace speciali (scratchpad, il nostro parcheggio per le
         // finestre "minimizzate") hanno id negativi e non sono qualcosa
         // su cui l'utente passa.
         if (ws.id <= 0) continue;
+        seen.insert(ws.id);
         WorkspaceRow row;
         row.id = ws.id;
         row.name = ws.name.isEmpty() ? QString::number(ws.id) : ws.name;
         row.windowCount = ws.windowCount;
         row.active = active && active->id == ws.id;
         row.hasFullscreen = ws.hasFullscreen;
+        fresh.push_back(row);
+    }
+
+    // Le aree di lavoro 1..N sono aree *reali* della sessione, non segnaposto:
+    // Hyprland distrugge un'area vuota appena la si lascia, quindi fermarsi
+    // alla sua lista significherebbe mostrare un solo puntino e non poter
+    // trascinare nulla su un'area nuova. La shell tiene quindi sempre
+    // presenti le aree configurate ([behavior] workspace_count) e le crea in
+    // Hyprland al primo uso — cambio area, trascinamento o clic sul puntino
+    // passano da hyprctl dispatch, che crea davvero l'area mancante.
+    const int configured = ConfigManager::instance().workspaceCount();
+    for (int id = 1; id <= configured; ++id) {
+        if (seen.contains(id)) continue;
+        WorkspaceRow row;
+        row.id = id;
+        row.name = QString::number(id);
+        row.active = active && active->id == id;
         fresh.push_back(row);
     }
 

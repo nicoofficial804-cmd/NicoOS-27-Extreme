@@ -107,6 +107,8 @@ done
 missing=0
 for f in /usr/bin/Hyprland /usr/bin/sddm /usr/bin/nicoos-shell /usr/bin/foot \
          /usr/local/bin/nicoos-session /usr/local/bin/nicoos-emergency-shell \
+         /usr/local/bin/nicoos-emergency-console \
+         /etc/systemd/system/nicoos-emergency-console.path \
          /usr/share/wayland-sessions/nicoos.desktop \
          /usr/share/sddm/themes/nicoos/Main.qml \
          /etc/skel/.config/hypr/hyprland.lua; do
@@ -165,8 +167,12 @@ log "immagine del kernel installata da $KERNEL_IMAGE in /boot/vmlinuz-linux"
 if [ -f /etc/default/grub ]; then
     sed -i 's/^GRUB_DISTRIBUTOR=.*/GRUB_DISTRIBUTOR="NicoOS"/' /etc/default/grub
     sed -i 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=5/' /etc/default/grub
+    # `splash` accende la schermata di avvio Plymouth (tema nicoos). Calamares
+    # riscrive questa riga nel modulo grubcfg: tenerla allineata a
+    # /etc/calamares/modules/grubcfg.conf evita sorprese se quel modulo viene
+    # saltato.
     grep -q '^GRUB_CMDLINE_LINUX_DEFAULT' /etc/default/grub \
-        || echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=3"' >> /etc/default/grub
+        || echo 'GRUB_CMDLINE_LINUX_DEFAULT="quiet loglevel=3 nowatchdog splash"' >> /etc/default/grub
 fi
 
 # systemd-boot (se l'utente lo sceglie al posto di GRUB) ha bisogno di una

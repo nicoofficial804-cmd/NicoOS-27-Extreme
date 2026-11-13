@@ -5,8 +5,8 @@ Rectangle {
     id: root
     anchors.fill: parent
     radius: 24
-    color: Qt.rgba(0.04, 0.05, 0.075, 0.95)
-    border.color: Qt.rgba(1, 1, 1, 0.10)
+    color: Qt.rgba(0.02, 0.02, 0.02, 0.95)
+    border.color: Qt.rgba(0.89, 0.15, 0.17, 0.10)
     border.width: 1
     focus: true
     Keys.onEscapePressed: surface.hideSurface()
@@ -24,14 +24,14 @@ Rectangle {
         Layout.preferredHeight: 34
         Layout.preferredWidth: pbRow.implicitWidth + 24
         radius: 17
-        color: pbTap.pressed ? Qt.rgba(1, 1, 1, 0.22) : (pbHover.hovered ? Qt.rgba(1, 1, 1, 0.14) : Qt.rgba(1, 1, 1, 0.08))
+        color: pbTap.pressed ? Qt.rgba(0.89, 0.15, 0.17, 0.22) : (pbHover.hovered ? Qt.rgba(0.89, 0.15, 0.17, 0.14) : Qt.rgba(0.89, 0.15, 0.17, 0.08))
         Behavior on color { ColorAnimation { duration: 120 } }
         RowLayout {
             id: pbRow
             anchors.centerIn: parent
             spacing: 7
             IconGlyph { source: pb.icon; iconSize: 15; visible: pb.icon.length > 0 }
-            Text { text: pb.label; color: "#ffffff"; font.pixelSize: 12 }
+            Text { text: pb.label; color: "#e3272b"; font.pixelSize: 12 }
         }
         HoverHandler { id: pbHover }
         TapHandler { id: pbTap; onTapped: pb.clicked() }
@@ -47,10 +47,10 @@ Rectangle {
             spacing: 10
             ColumnLayout {
                 spacing: 2
-                Text { text: "Sfondi"; color: "#ffffff"; font.pixelSize: 22; font.weight: Font.DemiBold }
+                Text { text: "Sfondi"; color: "#e3272b"; font.pixelSize: 22; font.weight: Font.DemiBold }
                 Text {
                     text: grid.count + (grid.count === 1 ? " immagine" : " immagini")
-                    color: Qt.rgba(1, 1, 1, 0.5)
+                    color: Qt.rgba(0.89, 0.15, 0.17, 0.5)
                     font.pixelSize: 12
                 }
             }
@@ -80,10 +80,10 @@ Rectangle {
                     anchors.margins: 8
                     radius: 16
                     clip: true
-                    color: Qt.rgba(1, 1, 1, 0.05)
+                    color: Qt.rgba(0.89, 0.15, 0.17, 0.05)
                     scale: tap.pressed ? 0.97 : (hover.hovered ? 1.03 : 1.0)
                     border.width: isCurrent ? 2 : 1
-                    border.color: isCurrent ? accentColor : Qt.rgba(1, 1, 1, hover.hovered ? 0.3 : 0.1)
+                    border.color: isCurrent ? accentColor : Qt.rgba(0.89, 0.15, 0.17, hover.hovered ? 0.3 : 0.1)
                     Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                     Behavior on border.color { ColorAnimation { duration: 140 } }
 
@@ -114,7 +114,7 @@ Rectangle {
                             anchors.bottom: parent.bottom
                             anchors.margins: 8
                             text: wpName
-                            color: "#ffffff"
+                            color: "#e3272b"
                             font.pixelSize: 11
                             elide: Text.ElideRight
                         }
@@ -142,7 +142,7 @@ Rectangle {
                 anchors.centerIn: parent
                 horizontalAlignment: Text.AlignHCenter
                 text: "Nessuno sfondo trovato.\nMetti le immagini in Immagini/Wallpapers\noppure in ~/.config/nicoos/wallpapers"
-                color: Qt.rgba(1, 1, 1, 0.5)
+                color: Qt.rgba(0.89, 0.15, 0.17, 0.5)
                 font.pixelSize: 13
                 lineHeight: 1.3
             }

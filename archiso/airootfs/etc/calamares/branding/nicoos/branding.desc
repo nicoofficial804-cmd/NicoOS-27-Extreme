@@ -32,13 +32,15 @@ images:
     productLogo:    "logo.png"
     productWelcome: "wallpaper.png"
 
+# Colori primari di NicoOS: il rosso del logo ufficiale (#e3272b) e il nero.
+# La barra laterale è nera, la voce corrente è rossa con testo nero.
 style:
-    SidebarBackground:        "#080d16"
-    SidebarText:              "#5a6b80"
-    SidebarTextCurrent:       "#05070d"
-    SidebarBackgroundCurrent: "#00d9ff"
+    SidebarBackground:        "#000000"
+    SidebarText:              "#e3272b"
+    SidebarTextCurrent:       "#000000"
+    SidebarBackgroundCurrent: "#e3272b"
 
-# Presentazione QML (show.qml): disegna uno sfondo scuro opaco e testi chiari,
-# così durante l'installazione non compaiono mai aree bianche. È composta solo
-# da rettangoli, un gradiente e testo: resta leggera anche con il rendering
-# software delle macchine virtuali.
+# Presentazione QML (show.qml): sfondo nero opaco, titoli e testo rossi,
+# così durante l'installazione non compaiono aree con colori estranei.
+# È composta solo da rettangoli, un gradiente e testo: resta leggera anche con
+# il rendering software delle macchine virtuali.

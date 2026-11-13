@@ -121,6 +121,7 @@ chmod 0644 /etc/passwd /etc/group
 # Gli script di sessione NicoOS devono essere eseguibili qualunque fosse la
 # umask.
 chmod 0755 /usr/local/bin/nicoos-session /usr/local/bin/nicoos-emergency-shell \
+           /usr/local/bin/nicoos-emergency-console \
            /usr/local/bin/nicoos-installer /usr/local/bin/nicoos-ensure-shell \
            /usr/local/bin/nicoos-target-prepare /usr/local/bin/nicoos-target-finalize
 
@@ -177,7 +178,35 @@ cp -f /usr/share/nicoos/branding/nicoos-logo.png \
 gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# 6. Un pacman funzionante sulla ISO e sul sistema installato
+# 6. Schermata di avvio (Plymouth)
+# ---------------------------------------------------------------------------
+# Il tema nicoos è nell'overlay (/usr/share/plymouth/themes/nicoos: anello di
+# punti in rotazione + logo) e viene copiato dentro l'initramfs dall'hook
+# `plymouth`, presente qui in /etc/mkinitcpio.conf.d/archiso.conf e sul sistema
+# installato negli hook che Calamares riscrive.
+#
+# La selezione del tema vive in /etc/plymouth/plymouthd.conf, che appartiene al
+# pacchetto plymouth: scriverlo qui e non nell'overlay evita il conflitto che
+# pacman rifiuta (un file non tracciato allo stesso percorso annulla l'intera
+# transazione). Va comunque fatto prima di rigenerare l'initramfs, cioè prima
+# che l'hook copi il tema dentro l'immagine.
+log "schermata di avvio: selezione del tema Plymouth nicoos"
+plymouth-set-default-theme nicoos
+if [[ "$(plymouth-set-default-theme)" != "nicoos" ]]; then
+    echo "ERRORE FATALE: impossibile selezionare il tema Plymouth nicoos" >&2
+    exit 1
+fi
+
+if [[ ! -e /boot/vmlinuz-linux ]]; then
+    echo "ERRORE FATALE: /boot/vmlinuz-linux mancante, initramfs non generabile" >&2
+    exit 1
+fi
+
+log "rigenerazione dell'initramfs (hook plymouth + tema nicoos)"
+mkinitcpio -P
+
+# ---------------------------------------------------------------------------
+# 7. Un pacman funzionante sulla ISO e sul sistema installato
 # ---------------------------------------------------------------------------
 # mkarchiso costruisce la ISO con -G (il keyring dell'host non viene copiato)
 # e pacstrap copia la mirrorlist della macchina che compila. Entrambe le cose
@@ -198,7 +227,7 @@ if [[ ! -s /etc/pacman.d/gnupg/pubring.gpg ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 7. Lingua: solo italiano
+# 8. Lingua: solo italiano
 # ---------------------------------------------------------------------------
 # /etc/locale.gen contiene unicamente it_IT.UTF-8 e /etc/locale.conf imposta
 # LANG=it_IT.UTF-8: genera la locale, così l'immagine live e Calamares sono in
@@ -207,7 +236,7 @@ log "generazione della locale italiana (it_IT.UTF-8)"
 locale-gen
 
 # ---------------------------------------------------------------------------
-# 8. Pulizia
+# 9. Pulizia
 # ---------------------------------------------------------------------------
 # Gli input di compilazione non devono finire sulla ISO (e /root è comunque
 # escluso dall'installazione, ma la ISO live deve restare ordinata e piccola).

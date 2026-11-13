@@ -6,7 +6,7 @@
 [appearance]
 # Colore esadecimale usato per accenti, evidenziazioni e bagliori in tutta la
 # shell.
-accent_color=#00d9ff
+accent_color=#e3272b
 # Sfondo di pannello/popup da 0.0 (del tutto trasparente) a 1.0 (del tutto
 # opaco).
 panel_opacity=0.72
@@ -35,6 +35,10 @@ clock_format=HH:mm
 launcher_shortcut=SUPER,R
 # Se il cambio di area di lavoro ricomincia dalla prima dopo l'ultima.
 workspace_wrap_around=true
+# Quante aree di lavoro la shell tiene sempre presenti (1..N, da 1 a 20).
+# Sono aree reali di Hyprland: quelle vuote vengono create al primo uso
+# (cambio area, clic sul puntino o trascinamento di una finestra).
+workspace_count=10
 
 [wallpaper]
 # Impostato automaticamente quando scegli uno sfondo (SUPER+W).
