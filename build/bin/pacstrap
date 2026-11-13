@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+#
+# build/bin/pacstrap — sostituto non privilegiato di pacstrap.
+#
+# Installerà i pacchetti Arch in un albero (`root`) usando pacman --root, che
+# non richiede di montare il root come filesystem separato e non tocca nulla
+# dell'host. Tutto gira dentro `unshare --map-auto --map-root-user`, con un
+# mount namespace privato per /dev e /proc usati dagli script di pacman.
+#
+# Differenze volute rispetto a pacstrap di arch-install-scripts:
+#   * la cache pacman è sempre $B/cache/pacman (scrivibile e riusabile), non
+#     /var/cache/pacman/pkg dell'host: -c non può scrivere nell'host;
+#   * il keyring viene sempre reso disponibile al root di destinazione, anche
+#     con -G, perché i profili archiso usano SigLevel = Required. Il keyring
+#     è una copia in $B/keys/gnupg, mai quello dell'host in scrittura;
+#   * -M e -P sono accettate per compatibilità con mkarchiso.
+#
+# Uso (stessa forma di pacstrap):
+#   pacstrap [-C config] [-c] [-D] [-G] [-K] [-M] [-N] [-P] [-U] root [pkg...]
+set -euo pipefail
+
+SELF_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+SELF=$SELF_DIR/$(basename -- "${BASH_SOURCE[0]}")
+LIB_DIR=$(cd -- "$SELF_DIR/.." && pwd -P)/lib
+# shellcheck source=../lib/common.sh
+source "$LIB_DIR/common.sh"
+
+orig_args=("$@")
+if [[ ${NICOOS_PACSTRAP_INNER:-0} != 1 ]]; then
+    if (( EUID == 0 )); then
+        exec env NICOOS_PACSTRAP_INNER=1 \
+            unshare --mount --propagation private "$SELF" "${orig_args[@]}"
+    fi
+    exec env NICOOS_PACSTRAP_INNER=1 \
+        unshare --map-auto --map-root-user --mount --propagation private \
+        "$SELF" "${orig_args[@]}"
+fi
+
+usage() {
+    cat <<'EOF'
+uso: pacstrap [-C config] [-c] [-D] [-G] [-K] [-M] [-N] [-P] [-U] root [pacchetti...]
+
+  -C <config>  file pacman.conf alternativo (default: $B/pacman-build.conf)
+  -c           accettata per compatibilità (la cache è sempre $B/cache/pacman)
+  -D           salta i controlli sulle dipendenze
+  -G           accettata per compatibilità (il keyring della sandbox è sempre usato)
+  -K           crea un keyring nel root di destinazione copiando quello della sandbox
+  -M           non copia la mirrorlist dell'host
+  -N           accettata per compatibilità (la sandbox è sempre attiva)
+  -P           copia il pacman.conf usato nel root di destinazione
+  -U           installa i pacchetti con pacman -U
+EOF
+}
+
+config=$NICOOS_PACMAN_CONF
+initkeyring=0
+copymirrorlist=1
+copyconf=0
+nodeps=0
+localpkgs=0
+interactive=0
+
+while getopts ':C:cDGiKMNPhU' opt; do
+    case $opt in
+        C) config=$OPTARG ;;
+        c) : ;;             # cache della sandbox, non dell'host
+        D) nodeps=1 ;;
+        G) : ;;             # keyring della sandbox, vedi intestazione
+        i) interactive=1 ;;
+        K) initkeyring=1 ;;
+        M) copymirrorlist=0 ;;
+        N) : ;;             # sandbox sempre attiva
+        P) copyconf=1 ;;
+        U) localpkgs=1 ;;
+        h) usage; exit 0 ;;
+        :) die "l'opzione -$OPTARG richiede un argomento" ;;
+        \?) die "opzione sconosciuta: -$OPTARG (vedi pacstrap -h)" ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+[[ $# -ge 1 ]] || { usage >&2; exit 1; }
+[[ $1 == -- ]] && shift
+root=$1
+shift
+pkgs=("$@")
+(( ${#pkgs[@]} )) || pkgs=(base)
+
+[[ -f $config ]] || die "configurazione pacman inesistente: $config"
+
+root=$(realpath -m -- "$root")
+mkdir -p -- "$root"/{var/lib/pacman,var/log,etc/pacman.d,dev,proc,sys,run,tmp} \
+             "$root/var/cache/pacman/pkg" \
+             "$NICOOS_PACMAN_CACHE"
+chmod 1777 "$root/tmp" 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
+# Keyring della sandbox
+# ---------------------------------------------------------------------------
+if [[ ! -d $NICOOS_KEYRING ]]; then
+    die "keyring della sandbox assente: $NICOOS_KEYRING
+Esegui prima build/steps/01-toolchain.sh (lo prepara da /etc/pacman.d/gnupg)."
+fi
+
+if (( copymirrorlist )) && [[ -f /etc/pacman.d/mirrorlist ]]; then
+    cp -a --no-preserve=ownership /etc/pacman.d/mirrorlist \
+        "$root/etc/pacman.d/mirrorlist" 2>/dev/null || true
+fi
+if (( copyconf )); then
+    cp -a --no-preserve=ownership "$config" "$root/etc/pacman.conf" 2>/dev/null || true
+fi
+
+# ---------------------------------------------------------------------------
+# Mount API per gli script di installazione dei pacchetti
+# ---------------------------------------------------------------------------
+active_mounts=()
+cleanup() {
+    local mnt
+    for mnt in "${active_mounts[@]:-}"; do
+        [[ -n $mnt ]] && umount -l -- "$mnt" 2>/dev/null || true
+    done
+}
+trap cleanup EXIT
+
+mount_api() {
+    local dir=$1 src=$2
+    mkdir -p -- "$root/$dir"
+    if mount --rbind -- "$src" "$root/$dir" 2>/dev/null; then
+        active_mounts+=("$root/$dir")
+    fi
+}
+mount_api dev /dev
+mount_api proc /proc
+mount_api sys /sys
+
+# ---------------------------------------------------------------------------
+# Installazione
+# ---------------------------------------------------------------------------
+pacman_common=(
+    --config "$config"
+    --root "$root"
+    --dbpath "$root/var/lib/pacman"
+    --cachedir "$NICOOS_PACMAN_CACHE"
+    # Il keyring resta nella sandbox (percorso assoluto dell'host): il root di
+    # destinazione non ne ha uno durante la transazione, così gli script dei
+    # pacchetti non trovano un keyring senza chiave privata. Il keyring viene
+    # copiato nel root solo alla fine.
+    --gpgdir "$NICOOS_KEYRING"
+    --arch x86_64
+    --disable-download-timeout
+)
+pacman_flags=(--noconfirm)
+(( interactive )) && pacman_flags=()
+
+log "sync dei database pacman (sandbox: $config)"
+pacman "${pacman_common[@]}" "${pacman_flags[@]}" -Sy
+
+log "installazione di ${#pkgs[@]} pacchetti in $root"
+if (( localpkgs )); then
+    pacman "${pacman_common[@]}" "${pacman_flags[@]}" -U "${pkgs[@]}"
+else
+    install_flags=(--needed)
+    (( nodeps )) && install_flags+=(--nodeps)
+    pacman "${pacman_common[@]}" "${pacman_flags[@]}" "${install_flags[@]}" -S "${pkgs[@]}"
+fi
+
+# Keyring nel root di destinazione: si copia DOPO la transazione. Durante
+# l'installazione pacman usa --gpgdir sulla sandbox, quindi non serve; così
+# lo script di archlinux-keyring non trova un keyring senza chiave privata e
+# non tenta di firmare (né lascia socket del gpg-agent nel root).
+if [[ ! -d $root/etc/pacman.d/gnupg && -d $NICOOS_KEYRING ]]; then
+    cp -a --no-preserve=ownership "$NICOOS_KEYRING" "$root/etc/pacman.d/gnupg" \
+        || warn "impossibile copiare il keyring in $root/etc/pacman.d/gnupg"
+fi
+(( initkeyring )) && info "keyring della sandbox reso disponibile in $root/etc/pacman.d/gnupg"
+
+[[ -x $root/usr/bin/pacman ]] || warn "il root di destinazione non contiene /usr/bin/pacman (atteso per liste senza 'base')"
+info "pacchetti installati in $root"

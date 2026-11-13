@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+#
+# build/bin/arch-chroot — chroot non privilegiato per la sandbox NicoOS.
+#
+# Fa quello che serve a mkarchiso e ai passi di compilazione senza root:
+#   * entra in un namespace utente (`unshare --map-auto --map-root-user`);
+#   * crea un mount namespace privato (`--propagation private`), così i bind
+#     mount spariscono all'uscita e non possono finire in mksquashfs;
+#   * monta proc, /sys, /dev, resolv.conf e ogni percorso di
+#     NICOOS_CHROOT_BINDS (il repository) allo stesso percorso assoluto;
+#   * esegue il comando con un ambiente pulito, come arch-chroot vero.
+#
+# Uso: arch-chroot [-r] [-u utente[:gruppo]] root [comando [argomenti...]]
+set -euo pipefail
+
+SELF_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+SELF=$SELF_DIR/$(basename -- "${BASH_SOURCE[0]}")
+LIB_DIR=$(cd -- "$SELF_DIR/.." && pwd -P)/lib
+# shellcheck source=../lib/common.sh
+source "$LIB_DIR/common.sh"
+
+orig_args=("$@")
+if [[ ${NICOOS_ARCHCHROOT_INNER:-0} != 1 ]]; then
+    if (( EUID == 0 )); then
+        exec env NICOOS_ARCHCHROOT_INNER=1 \
+            unshare --mount --propagation private "$SELF" "${orig_args[@]}"
+    fi
+    exec env NICOOS_ARCHCHROOT_INNER=1 \
+        unshare --map-auto --map-root-user --mount --propagation private \
+        --pid --fork --mount-proc "$SELF" "${orig_args[@]}"
+fi
+
+usage() {
+    cat <<'EOF'
+uso: arch-chroot [-r] [-u utente[:gruppo]] root [comando [argomenti...]]
+
+  -r             non montare /etc/resolv.conf nel chroot
+  -u utente[:g]  esegue il comando come utente (solo id numerici o nomi
+                 presenti nell'host; mkarchiso non usa questa opzione)
+  -N             accettata per compatibilità (la sandbox è sempre attiva)
+  -S             non supportata (systemd-run): viene ignorata con un avviso
+  -h             questo aiuto
+EOF
+}
+
+keepresolv=0
+userspec=""
+while getopts ':hNSu:r' opt; do
+    case $opt in
+        h) usage; exit 0 ;;
+        N) : ;;             # comportamento predefinito di questo wrapper
+        S) warn "-S (systemd-run) non è disponibile nella sandbox: uso chroot normale" ;;
+        u) userspec=$OPTARG ;;
+        r) keepresolv=1 ;;
+        :) die "l'opzione -$OPTARG richiede un argomento" ;;
+        \?) die "opzione sconosciuta: -$OPTARG (vedi arch-chroot -h)" ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+[[ $# -ge 1 ]] || { usage >&2; exit 1; }
+root=$(realpath -m -- "$1")
+shift
+[[ -d $root ]] || die "directory chroot inesistente: $root"
+[[ $# -gt 0 ]] || set -- /bin/bash
+[[ -x $root/bin/bash || -x $root/usr/bin/bash ]] || \
+    die "nessuna bash in $root: la sandbox non può eseguire comandi"
+
+# ---------------------------------------------------------------------------
+# Mount
+# ---------------------------------------------------------------------------
+active_mounts=()
+cleanup() {
+    local mnt
+    for mnt in "${active_mounts[@]:-}"; do
+        [[ -n $mnt ]] && umount -l -- "$mnt" 2>/dev/null || true
+    done
+}
+trap cleanup EXIT
+
+mount_add() {
+    local dest=$1
+    shift
+    if mount "$@" "$dest" 2>/dev/null; then
+        active_mounts+=("$dest")
+        return 0
+    fi
+    return 1
+}
+
+# Il root deve essere un mountpoint: findmnt/pacman lo controllano.
+mount_add "$root" --bind "$root" || \
+    warn "impossibile rendere $root un mountpoint (mount --bind su se stesso)"
+
+mkdir -p -- "$root"/{proc,sys,dev,run,etc}
+mount_add "$root/proc" -t proc proc || warn "proc non montato in $root"
+mount_add "$root/sys" --rbind /sys || warn "sys non montato in $root"
+mount_add "$root/dev" --rbind /dev || warn "dev non montato in $root"
+
+# /etc/resolv.conf: il percorso host può essere un link a /run/systemd/...;
+# si monta il file risolto, solo se il chroot ne ha già uno da coprire.
+if (( ! keepresolv )) && [[ -e /etc/resolv.conf ]]; then
+    resolv_src=$(readlink -f -- /etc/resolv.conf 2>/dev/null || printf '/etc/resolv.conf')
+    [[ -f $resolv_src ]] || resolv_src=/etc/resolv.conf
+    resolv_dst=$root/etc/resolv.conf
+    if [[ -L $resolv_dst ]]; then
+        resolved=$(readlink -f -- "$resolv_dst" 2>/dev/null || true)
+        [[ -n $resolved && $resolved == "$root"/* ]] && resolv_dst=$resolved
+    fi
+    if [[ -f $resolv_dst ]]; then
+        mount_add "$resolv_dst" --bind "$resolv_src" || \
+            warn "resolv.conf non montato nel chroot"
+    elif [[ -d $(dirname -- "$resolv_dst") ]]; then
+        # Arch non crea /etc/resolv.conf nel root: crealo vuoto e montaci sopra.
+        : > "$resolv_dst" 2>/dev/null || true
+        if [[ -f $resolv_dst ]]; then
+            mount_add "$resolv_dst" --bind "$resolv_src" || \
+                warn "resolv.conf non montato nel chroot"
+        fi
+    fi
+fi
+
+# Percorsi del progetto (NICOOS_CHROOT_BINDS) allo stesso percorso assoluto:
+# è così che i passi compilano $PROJ/nicoos27-shell dentro il chroot e
+# scrivono in $B/stage senza copiare sorgenti.
+if [[ -n ${NICOOS_CHROOT_BINDS:-} ]]; then
+    IFS=':' read -r -a binds <<<"$NICOOS_CHROOT_BINDS"
+    for bind_src in "${binds[@]}"; do
+        [[ -n $bind_src ]] || continue
+        bind_src=$(realpath -m -- "$bind_src")
+        if [[ ! -e $bind_src ]]; then
+            warn "percorso da montare inesistente, ignorato: $bind_src"
+            continue
+        fi
+        bind_dst="$root$bind_src"
+        if [[ -e $bind_dst && ! -d $bind_dst ]]; then
+            mount_add "$bind_dst" --bind "$bind_src" || \
+                warn "bind non riuscito: $bind_src"
+            continue
+        fi
+        mkdir -p -- "$bind_dst"
+        mount_add "$bind_dst" --bind "$bind_src" || \
+            warn "bind non riuscito: $bind_src -> $bind_dst"
+    done
+fi
+
+# ---------------------------------------------------------------------------
+# Esecuzione
+# ---------------------------------------------------------------------------
+clean_env=(env -i
+    HOME=/root
+    TERM="${TERM:-dumb}"
+    PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/sbin:/bin:/sbin
+    LANG=C
+    LC_ALL=C)
+
+if [[ -n $userspec ]]; then
+    if [[ $userspec =~ ^[0-9]+(:[0-9]+)?$ ]]; then
+        chroot --userspec="$userspec" "$root" "${clean_env[@]}" "$@"
+    else
+        die "-u $userspec: la sandbox accetta solo id numerici (utente[:gruppo])"
+    fi
+else
+    chroot "$root" "${clean_env[@]}" "$@"
+fi

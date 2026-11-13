@@ -7,16 +7,16 @@
 #   ./build.sh --branding   rigenera solo gli asset grafici
 #
 # La compilazione è divisa in passi tutti riproducibili:
-#   .build/steps/01-toolchain.sh   prepara il chroot di compilazione (una volta)
-#   .build/steps/02-calamares.sh   compila Calamares 3.4.2 (AUR) nel chroot
-#   .build/steps/03-shell.sh       compila nicoos27-shell (README_SHELL.md)
-#   .build/steps/04-packages.sh    impacchetta entrambi nel repository [nicoos]
+#   build/steps/01-toolchain.sh   prepara il chroot di compilazione (una volta)
+#   build/steps/02-calamares.sh   compila Calamares 3.4.2 (AUR) nel chroot
+#   build/steps/03-shell.sh       compila nicoos27-shell (README_SHELL.md)
+#   build/steps/04-packages.sh    impacchetta entrambi nel repository [nicoos]
 #   tools/make-branding.py         sfondo / logo / splash
 #   mkarchiso                      assembla la ISO
 #
 # Il tutto gira senza privilegi: ogni passo che richiede root gira dentro
 # `unshare --map-auto --map-root-user` con i wrapper pacstrap e arch-chroot
-# compatibili con la sandbox in .build/bin. Nessun disco fisico viene mai
+# compatibili con la sandbox in build/bin. Nessun disco fisico viene mai
 # toccato.
 set -euo pipefail
 
@@ -25,7 +25,7 @@ B=$PROJ/.build
 PROFILE=$PROJ/archiso
 OUT=$PROJ/out
 
-export PATH="$B/bin:$B/tools/usr/bin:$PATH"
+export PATH="$PROJ/build/bin:$B/tools/usr/bin:$PATH"
 export NICOOS_CHROOT_BINDS="$PROJ"
 export LC_ALL=C
 
@@ -62,12 +62,12 @@ fi
 
 [[ -x $B/root/usr/bin/pacman ]] || {
     log "preparazione del chroot di compilazione (toolchain)"
-    "$B/steps/01-toolchain.sh"
+    "$PROJ/build/steps/01-toolchain.sh"
 }
 
 [[ -x $B/stage/calamares/usr/bin/calamares ]] || {
     log "compilazione di Calamares 3.4.2 (AUR)"
-    "$B/steps/02-calamares.sh"
+    "$PROJ/build/steps/02-calamares.sh"
 }
 
 # Lo stage della shell viene riusato tra una build e l'altra. Se un file dei
@@ -78,11 +78,11 @@ shell_stage=$B/stage/nicoos-shell/usr/bin/nicoos-shell
 if [[ ! -x $shell_stage ]] || \
    [[ -n $(find "$PROJ/nicoos27-shell" -newer "$shell_stage" -print -quit 2>/dev/null) ]]; then
     log "compilazione della shell NicoOS (nicoos27-shell)"
-    "$B/steps/03-shell.sh"
+    "$PROJ/build/steps/03-shell.sh"
 fi
 
 log "impacchettamento di calamares e nicoos-shell nel repository [nicoos]"
-"$B/steps/04-packages.sh"
+"$PROJ/build/steps/04-packages.sh"
 
 # ---------------------------------------------------------------------------
 # 2. Preparazione del profilo archiso
@@ -134,7 +134,7 @@ if [ -e "$B/work" ]; then
 fi
 
 unshare --map-auto --map-root-user --mount --pid --fork --mount-proc \
-    env PATH="$B/bin:$B/tools/usr/bin:$PATH" NICOOS_CHROOT_BINDS="$PROJ" \
+    env PATH="$PROJ/build/bin:$B/tools/usr/bin:$PATH" NICOOS_CHROOT_BINDS="$PROJ" \
     mkarchiso -v -w "$B/work" -o "$OUT" "$PROFILE"
 
 # ---------------------------------------------------------------------------

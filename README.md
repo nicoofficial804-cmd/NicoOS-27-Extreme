@@ -37,7 +37,7 @@ versione per versione sono in [`nicoos27-shell/CHANGELOG.md`](nicoos27-shell/CHA
   `ninja`, `pkgconf`, `python3`, `git`, `squashfs-tools`.
 - **User namespace non privilegiati** abilitati: la build gira interamente
   senza root, dentro `unshare --map-auto --map-root-user`, con i wrapper
-  `pacstrap`/`arch-chroot`/`mkpkg` in `.build/bin`. Nessun disco fisico viene
+  `pacstrap`/`arch-chroot`/`mkpkg` in `build/bin`. Nessun disco fisico viene
   mai toccato.
 - **Rete** verso i mirror Arch (`geo.mirror.pkgbuild.com`,
   `mirror.rackspace.com`, `mirrors.kernel.org`) e spazio libero su disco
@@ -74,16 +74,17 @@ versione per versione sono in [`nicoos27-shell/CHANGELOG.md`](nicoos27-shell/CHA
 ├── logo.png                   # banner orizzontale "NicoOS 27 EXTREME"
 ├── tools/make-branding.py    # genera sfondo, logo, splash e asset Plymouth
 ├── wallpapers/               # sfondi inclusi nella ISO (README dedicato)
+├── build/                    # pipeline di build: steps/, lib/, bin/ (versionata)
 ├── out/                      # ISO prodotta e relativo .sha256
-└── .build/                   # stato locale della build — NON versionato
+└── .build/                   # solo stato locale della build — NON versionato
 ```
 
-> **Nota importante:** `.build/` è in `.gitignore`. Contiene il chroot della
-> toolchain, i sorgenti scaricati, i pacchetti impacchettati e i passi
-> `01-toolchain.sh` … `04-packages.sh` (che contengono percorsi assoluti della
-> macchina di build). Su un clone nuovo `./build.sh` non può funzionare finché
-> quell'infrastruttura non viene ricreata o adattata. I passi sono elencati in
-> [`build.sh`](build.sh) e ogni script è autonomo.
+> **Nota importante:** `.build/` è in `.gitignore` e contiene **solo stato**
+> locale: chroot della toolchain, sorgenti scaricati, pacchetti, cache. La
+> pipeline che lo usa è versionata in `build/` — `steps/01-toolchain.sh` …
+> `04-packages.sh`, `lib/common.sh` e i wrapper `bin/pacstrap`, `bin/arch-chroot`,
+> `bin/mkpkg` — e ricava i percorsi dalla propria posizione, quindi un clone
+> nuovo compila subito con `./build.sh` senza adattamenti.
 
 ---
 
@@ -103,16 +104,16 @@ versione per versione sono in [`nicoos27-shell/CHANGELOG.md`](nicoos27-shell/CHA
    schermata di avvio Plymouth (`dot.png` e il `logo.png` del tema, ricavato
    dal marchio `nicoos27extreme.png`). È deterministico (nessuna dipendenza oltre alla
    libreria standard Python), quindi le ISO sono riproducibili.
-2. **Toolchain** (`.build/steps/01-toolchain.sh`) — prepara una volta sola un
+2. **Toolchain** (`build/steps/01-toolchain.sh`) — prepara una volta sola un
    chroot Arch con `base-devel`, CMake, Qt6 e le dipendenze dell'installer.
-3. **Calamares 3.4.2** (`.build/steps/02-calamares.sh`) — compila l'installer
+3. **Calamares 3.4.2** (`build/steps/02-calamares.sh`) — compila l'installer
    dai sorgenti nel chroot e lo mette in stage.
-4. **Shell** (`.build/steps/03-shell.sh`) — compila `nicoos27-shell` in
+4. **Shell** (`build/steps/03-shell.sh`) — compila `nicoos27-shell` in
    `Release` con Ninja, prefisso `/usr`, e verifica che il binario usi
    davvero `layer-shell-qt`. Lo stage viene riusato: se un sorgente della
    shell è più recente del binario, la shell viene ricompilata
    automaticamente.
-5. **Pacchetti** (`.build/steps/04-packages.sh`) — crea
+5. **Pacchetti** (`build/steps/04-packages.sh`) — crea
    `calamares-3.4.2-2` e `nicoos-shell-1.0.0-1`, più il repository locale
    `[nicoos]` usato dal profilo archiso.
 6. **Profilo** — genera `archiso/pacman.conf` dal template, copia
